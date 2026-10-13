@@ -538,8 +538,12 @@ export default function App() {
 
       {/* Modales */}
       <NewClientModal 
+        key={isNewClientOpen ? `client-${preselectedSlot?.cuentaId || 'all'}-${preselectedSlot?.perfilId || 'new'}` : 'client-closed'}
         isOpen={isNewClientOpen}
-        onClose={() => setIsNewClientOpen(false)}
+        onClose={() => {
+          setIsNewClientOpen(false);
+          setPreselectedSlot({ cuentaId: null, perfilId: null });
+        }}
         cuentas={cuentas}
         onSaveClient={handleSaveClient}
         preselectedCuentaId={preselectedSlot.cuentaId}
@@ -564,6 +568,7 @@ export default function App() {
       />
 
       <NewAccountModal 
+        key={isNewAccountOpen ? 'acct-modal-open' : 'acct-modal-closed'}
         isOpen={isNewAccountOpen}
         onClose={() => setIsNewAccountOpen(false)}
         onSaveAccount={handleSaveAccount}

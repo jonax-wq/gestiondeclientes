@@ -14,29 +14,43 @@ export function NewAccountModal({ isOpen, onClose, onSaveAccount }) {
   const [notas, setNotas] = useState('');
   const [perfilesCustom, setPerfilesCustom] = useState([]);
 
-  // Actualizar perfiles sugeridos y limpiar campos al abrir
-  useEffect(() => {
-    if (isOpen) {
-      setCorreo('');
-      setPassword('');
-      setProveedor('');
-      setNotas('');
-      const defaultCount = PLATFORMS[plataforma]?.defaultProfiles || 5;
-      setCantidadPerfiles(defaultCount);
-      generarSlotsPerfiles(defaultCount);
-    }
-  }, [plataforma, isOpen]);
-
   const generarSlotsPerfiles = (count) => {
     const arr = [];
     for (let i = 1; i <= count; i++) {
       arr.push({
         numero: i,
         nombre: `Perfil ${i}`,
-        pin: `${i}${i}${i}${i}`.substring(0, 4) // PIN sugerido simple o personalizable
+        pin: `${i}${i}${i}${i}`.substring(0, 4)
       });
     }
     setPerfilesCustom(arr);
+  };
+
+  const resetForm = () => {
+    setPlataforma('Netflix');
+    setCorreo('');
+    setPassword('');
+    setFechaCorte(addDays(getTodayDate(), 30));
+    setCosto('35.00');
+    setProveedor('');
+    setNotas('');
+    const defaultCount = PLATFORMS['Netflix']?.defaultProfiles || 5;
+    setCantidadPerfiles(defaultCount);
+    generarSlotsPerfiles(defaultCount);
+  };
+
+  // Limpiar completamente todos los campos cada vez que se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
+
+  const handleSelectPlatform = (platformId) => {
+    setPlataforma(platformId);
+    const defaultCount = PLATFORMS[platformId]?.defaultProfiles || 5;
+    setCantidadPerfiles(defaultCount);
+    generarSlotsPerfiles(defaultCount);
   };
 
   const handleCambiarCantidad = (num) => {
@@ -51,6 +65,11 @@ export function NewAccountModal({ isOpen, onClose, onSaveAccount }) {
       updated[index] = { ...updated[index], [field]: value };
       return updated;
     });
+  };
+
+  const handleCloseModal = () => {
+    resetForm();
+    onClose();
   };
 
   const handleSubmit = (e) => {
@@ -84,13 +103,14 @@ export function NewAccountModal({ isOpen, onClose, onSaveAccount }) {
     };
 
     onSaveAccount(nuevaCuenta);
+    resetForm();
     onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleCloseModal}>
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '640px' }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -113,12 +133,12 @@ export function NewAccountModal({ isOpen, onClose, onSaveAccount }) {
               </p>
             </div>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>
+          <button className="modal-close-btn" onClick={handleCloseModal}>
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="off">
           <div className="modal-body">
             {/* Selección de Plataforma */}
             <div className="form-group">
@@ -131,7 +151,7 @@ export function NewAccountModal({ isOpen, onClose, onSaveAccount }) {
                       type="button"
                       key={p.id}
                       className="pill-btn"
-                      onClick={() => setPlataforma(p.id)}
+                      onClick={() => handleSelectPlatform(p.id)}
                       style={{
                         borderColor: isSelected ? p.color : undefined,
                         background: isSelected ? p.badgeBg : undefined,
@@ -156,6 +176,7 @@ export function NewAccountModal({ isOpen, onClose, onSaveAccount }) {
                   placeholder="ejemplo@correo.com"
                   value={correo}
                   onChange={(e) => setCorreo(e.target.value)}
+                  autoComplete="off"
                   required
                 />
               </div>
@@ -168,6 +189,7 @@ export function NewAccountModal({ isOpen, onClose, onSaveAccount }) {
                   placeholder="Clave de la cuenta"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
                   required
                 />
               </div>
@@ -303,7 +325,7 @@ export function NewAccountModal({ isOpen, onClose, onSaveAccount }) {
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+            <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
               Cancelar
             </button>
             <button type="submit" className="btn btn-primary">

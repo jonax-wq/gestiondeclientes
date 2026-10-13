@@ -18,7 +18,8 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
-  Layers
+  Layers,
+  Search
 } from 'lucide-react';
 import { PLATFORMS } from '../constants/platforms';
 import { formatearFecha, calcularDiasRestantes } from '../utils/storage';
@@ -38,6 +39,8 @@ export function AccountsView({
   const [copiedItem, setCopiedItem] = useState(null);
   const [expandedAccounts, setExpandedAccounts] = useState({});
   const [allExpanded, setAllExpanded] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState('Todas');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const toggleExpand = (cuentaId) => {
     setExpandedAccounts(prev => ({
@@ -63,6 +66,46 @@ export function AccountsView({
       clientesPorPerfil[c.perfilId] = c;
       clientesPorPerfil[String(c.perfilId)] = c;
     }
+  });
+
+  // Plataformas únicas presentes en las cuentas
+  const plataformasConCuentas = Array.from(
+    new Set(cuentas.map(c => c.plataforma).filter(Boolean))
+  );
+
+  // Conteo de cuentas por plataforma
+  const conteoPorPlataforma = {};
+  cuentas.forEach(c => {
+    const plat = c.plataforma || 'Otro';
+    conteoPorPlataforma[plat] = (conteoPorPlataforma[plat] || 0) + 1;
+  });
+
+  // Filtrado de cuentas según plataforma seleccionada y búsqueda
+  const cuentasFiltradas = cuentas.filter(cta => {
+    if (selectedPlatform !== 'Todas' && cta.plataforma !== selectedPlatform) {
+      return false;
+    }
+
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      const correo = (cta.correo || '').toLowerCase();
+      const plat = (cta.plataforma || '').toLowerCase();
+      const prov = (cta.proveedor || '').toLowerCase();
+      const notas = (cta.notas || '').toLowerCase();
+      const perfilesMatch = (cta.perfiles || []).some(p => 
+        (p.nombre || '').toLowerCase().includes(term) ||
+        (p.pin || '').toLowerCase().includes(term)
+      );
+      return (
+        correo.includes(term) ||
+        plat.includes(term) ||
+        prov.includes(term) ||
+        notas.includes(term) ||
+        perfilesMatch
+      );
+    }
+
+    return true;
   });
 
   const togglePassword = (cuentaId) => {
@@ -108,6 +151,92 @@ export function AccountsView({
         </div>
       </div>
 
+      {/* Barra de Filtros por Plataforma y Búsqueda */}
+      {cuentas.length > 0 && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          flexWrap: 'wrap',
+          marginBottom: '20px',
+          paddingBottom: '16px',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+        }}>
+          {/* Botones de plataformas */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Tv size={14} /> Plataforma:
+            </span>
+
+            {/* Botón Todas */}
+            <button
+              type="button"
+              className={`pill-btn ${selectedPlatform === 'Todas' ? 'active' : ''}`}
+              onClick={() => setSelectedPlatform('Todas')}
+              style={{ fontWeight: selectedPlatform === 'Todas' ? 700 : 500 }}
+            >
+              <span>Todas</span>
+              <span className="counter-badge">{cuentas.length}</span>
+            </button>
+
+            {/* Botones para cada plataforma con cuentas */}
+            {plataformasConCuentas.map(platKey => {
+              const platInfo = PLATFORMS[platKey] || PLATFORMS.Otro;
+              const count = conteoPorPlataforma[platKey] || 0;
+              const isSelected = selectedPlatform === platKey;
+
+              return (
+                <button
+                  key={platKey}
+                  type="button"
+                  className={`pill-btn ${isSelected ? 'active' : ''}`}
+                  onClick={() => setSelectedPlatform(platKey)}
+                  style={{
+                    borderColor: isSelected ? (platInfo.borderColor || '#6366f1') : undefined,
+                    background: isSelected ? (platInfo.badgeBg || 'rgba(99, 102, 241, 0.25)') : undefined,
+                    color: isSelected ? (platInfo.textColor || '#fff') : undefined,
+                    fontWeight: isSelected ? 700 : 500,
+                    boxShadow: isSelected ? `0 0 12px ${platInfo.borderColor || '#6366f1'}33` : undefined
+                  }}
+                >
+                  <span style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: platInfo.color || '#6366f1',
+                    display: 'inline-block'
+                  }} />
+                  <span>{platInfo.name || platKey}</span>
+                  <span 
+                    className="counter-badge"
+                    style={isSelected ? {
+                      background: platInfo.color || '#6366f1',
+                      color: '#fff'
+                    } : undefined}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Buscador de cuentas */}
+          <div className="search-input-wrapper" style={{ minWidth: '220px', flex: '1 1 220px', maxWidth: '320px' }}>
+            <Search size={16} className="search-icon" />
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Buscar por correo, proveedor o notas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ fontSize: '0.82rem', padding: '7px 12px 7px 34px' }}
+            />
+          </div>
+        </div>
+      )}
+
       {cuentas.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">
@@ -122,9 +251,40 @@ export function AccountsView({
             <span>Registrar Cuenta Ahora</span>
           </button>
         </div>
+      ) : cuentasFiltradas.length === 0 ? (
+        <div className="empty-state" style={{ padding: '36px 20px' }}>
+          <div className="empty-icon">
+            <Tv size={26} />
+          </div>
+          <h3 className="empty-title">
+            {selectedPlatform !== 'Todas' 
+              ? `No hay cuentas de ${selectedPlatform}` 
+              : 'No se encontraron cuentas'}
+          </h3>
+          <p className="empty-desc">
+            {searchTerm 
+              ? `Ninguna cuenta coincide con "${searchTerm}".` 
+              : `Aún no has registrado cuentas maestras para ${selectedPlatform}.`}
+          </p>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+            {(selectedPlatform !== 'Todas' || searchTerm) && (
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => { setSelectedPlatform('Todas'); setSearchTerm(''); }}
+              >
+                Ver Todas las Cuentas
+              </button>
+            )}
+            <button className="btn btn-primary" onClick={onNewAccount}>
+              <Plus size={16} />
+              <span>Registrar Cuenta</span>
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="accounts-grid">
-          {cuentas.map(cta => {
+          {cuentasFiltradas.map(cta => {
             const platformInfo = PLATFORMS[cta.plataforma] || PLATFORMS.Otro;
             const perfiles = cta.perfiles || [];
             const ocupados = perfiles.filter(p => p.estado === 'asignado').length;
@@ -243,7 +403,7 @@ export function AccountsView({
                       return (
                         <div className="cred-row" style={{ alignItems: 'flex-start' }}>
                           <span className="cred-label" style={{ display: 'flex', alignItems: 'center', gap: '4px', paddingTop: '2px' }}>
-                            <Calendar size={13} /> Corte Cuenta:
+                            <Calendar size={13} /> Vencimiento:
                           </span>
                           <div style={{ textAlign: 'right' }}>
                             <span style={{ fontSize: '0.82rem', color: '#f8fafc', fontWeight: 600 }}>
@@ -251,16 +411,24 @@ export function AccountsView({
                             </span>
                             <div style={{ marginTop: '2px' }}>
                               {diasCorte < 0 ? (
-                                <span style={{ fontSize: '0.72rem', color: '#f87171', background: 'rgba(239, 68, 68, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
-                                  ⛔ Venció corte hace {Math.abs(diasCorte)}d
+                                <span style={{ fontSize: '0.72rem', color: '#f87171', background: 'rgba(239, 68, 68, 0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                  ⛔ Venció hace {Math.abs(diasCorte)} {Math.abs(diasCorte) === 1 ? 'día' : 'días'}
+                                </span>
+                              ) : diasCorte === 0 ? (
+                                <span style={{ fontSize: '0.72rem', color: '#f87171', background: 'rgba(239, 68, 68, 0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                  ⚠️ Vence hoy
+                                </span>
+                              ) : diasCorte === 1 ? (
+                                <span style={{ fontSize: '0.72rem', color: '#fbbf24', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                  ⚠️ Vence en 1 día
                                 </span>
                               ) : diasCorte <= 3 ? (
-                                <span style={{ fontSize: '0.72rem', color: '#fbbf24', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
-                                  ⚠️ Corte en {diasCorte} días
+                                <span style={{ fontSize: '0.72rem', color: '#fbbf24', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                  ⚠️ Vence en {diasCorte} días
                                 </span>
                               ) : (
-                                <span style={{ fontSize: '0.72rem', color: '#34d399' }}>
-                                  🟢 Corte en {diasCorte} días
+                                <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 600 }}>
+                                  🟢 Vence en {diasCorte} días
                                 </span>
                               )}
                             </div>
@@ -448,6 +616,24 @@ export function AccountsView({
                                           <WhatsAppIcon size={14} color="#25d366" />
                                         </button>
                                       </div>
+                                      {clienteAsignado.fechaVencimiento && (() => {
+                                        const dCli = calcularDiasRestantes(clienteAsignado.fechaVencimiento);
+                                        return (
+                                          <div style={{ marginTop: '3px', fontSize: '0.68rem', fontWeight: 600 }}>
+                                            {dCli < 0 ? (
+                                              <span style={{ color: '#f87171' }}>⛔ Venció hace {Math.abs(dCli)}d</span>
+                                            ) : dCli === 0 ? (
+                                              <span style={{ color: '#f87171' }}>⚠️ Vence hoy</span>
+                                            ) : dCli === 1 ? (
+                                              <span style={{ color: '#fbbf24' }}>⚠️ Vence en 1 día</span>
+                                            ) : dCli <= 2 ? (
+                                              <span style={{ color: '#fbbf24' }}>⚠️ Vence en {dCli} días</span>
+                                            ) : (
+                                              <span style={{ color: '#94a3b8' }}>Vence en {dCli} días</span>
+                                            )}
+                                          </div>
+                                        );
+                                      })()}
                                     </div>
                                   ) : (
                                     <div style={{ marginTop: '6px' }}>
