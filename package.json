@@ -1,0 +1,19 @@
+{
+  "name": "streamflow-gestion-clientes",
+  "version": "1.0.0",
+  "description": "Sistema profesional para gestión de cuentas de streaming, perfiles y clientes con WhatsApp directo",
+  "scripts": {
+    "dev": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "preview": "npm --prefix client run preview"
+  },
+  "keywords": [
+    "streaming",
+    "crm",
+    "clientes",
+    "whatsapp",
+    "cuentas"
+  ],
+  "author": "",
+  "license": "MIT"
+}
