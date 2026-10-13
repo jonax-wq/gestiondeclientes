@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Sistema profesional para gestión de cuentas de streaming, perfiles y clientes con WhatsApp directo",
   "scripts": {
+    "postinstall": "npm --prefix client install",
     "dev": "npm --prefix client run dev",
     "build": "npm --prefix client run build",
     "preview": "npm --prefix client run preview"
