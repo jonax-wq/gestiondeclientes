@@ -59,7 +59,10 @@ export function AccountsView({
   // Mapear clientes por perfilId para acceso rápido
   const clientesPorPerfil = {};
   clientes.forEach(c => {
-    clientesPorPerfil[c.perfilId] = c;
+    if (c.perfilId != null) {
+      clientesPorPerfil[c.perfilId] = c;
+      clientesPorPerfil[String(c.perfilId)] = c;
+    }
   });
 
   const togglePassword = (cuentaId) => {

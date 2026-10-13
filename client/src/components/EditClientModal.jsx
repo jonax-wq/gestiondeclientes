@@ -41,9 +41,9 @@ export function EditClientModal({
   if (!isOpen || !cliente) return null;
 
   // Cuentas disponibles o la cuenta actual
-  const cuentaActual = cuentas.find(c => c.id === cuentaId);
+  const cuentaActual = cuentas.find(c => String(c.id) === String(cuentaId));
   const perfilesDeCuenta = (cuentaActual?.perfiles || []).filter(
-    p => p.estado === 'disponible' || p.id === cliente.perfilId
+    p => p.estado === 'disponible' || String(p.id) === String(cliente.perfilId)
   );
 
   const handleSumar30Dias = () => {
@@ -71,7 +71,7 @@ export function EditClientModal({
       notas: notas.trim()
     };
 
-    onUpdateClient(clienteActualizado, cliente.perfilId !== perfilId ? cliente.perfilId : null);
+    onUpdateClient(clienteActualizado, String(cliente.perfilId) !== String(perfilId) ? cliente.perfilId : null);
     onClose();
   };
 

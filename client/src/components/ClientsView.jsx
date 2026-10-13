@@ -39,9 +39,15 @@ export function ClientsView({
   const perfilesMap = {};
 
   cuentas.forEach(cta => {
-    cuentasMap[cta.id] = cta;
+    if (cta.id != null) {
+      cuentasMap[cta.id] = cta;
+      cuentasMap[String(cta.id)] = cta;
+    }
     (cta.perfiles || []).forEach(p => {
-      perfilesMap[p.id] = { ...p, cuenta: cta };
+      if (p.id != null) {
+        perfilesMap[p.id] = { ...p, cuenta: cta };
+        perfilesMap[String(p.id)] = { ...p, cuenta: cta };
+      }
     });
   });
 

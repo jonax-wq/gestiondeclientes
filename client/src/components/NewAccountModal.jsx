@@ -14,9 +14,13 @@ export function NewAccountModal({ isOpen, onClose, onSaveAccount }) {
   const [notas, setNotas] = useState('');
   const [perfilesCustom, setPerfilesCustom] = useState([]);
 
-  // Actualizar perfiles sugeridos al cambiar la plataforma o la cantidad de perfiles
+  // Actualizar perfiles sugeridos y limpiar campos al abrir
   useEffect(() => {
     if (isOpen) {
+      setCorreo('');
+      setPassword('');
+      setProveedor('');
+      setNotas('');
       const defaultCount = PLATFORMS[plataforma]?.defaultProfiles || 5;
       setCantidadPerfiles(defaultCount);
       generarSlotsPerfiles(defaultCount);

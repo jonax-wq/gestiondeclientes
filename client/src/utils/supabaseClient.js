@@ -257,20 +257,26 @@ export async function guardarClienteEnSupabase(nuevoCliente) {
   if (!supabase) return null;
 
   try {
+    const celularLimpio = String(nuevoCliente.celular || '').trim();
+    const codigoPaisLimpio = String(nuevoCliente.codigoPais || '+51').trim();
+    const celularCompleto = nuevoCliente.celularCompleto || `${codigoPaisLimpio}${celularLimpio}`;
+    const cuentaIdNum = nuevoCliente.cuentaId ? parseInt(nuevoCliente.cuentaId, 10) : null;
+    const perfilIdNum = nuevoCliente.perfilId ? parseInt(nuevoCliente.perfilId, 10) : null;
+
     // 1. Insertar el cliente
     const { data: clienteCreado, error: errCli } = await supabase
       .from('clientes')
       .insert({
-        nombre: nuevoCliente.nombre,
-        codigo_pais: nuevoCliente.codigoPais || '+51',
-        celular: nuevoCliente.celular,
-        celular_completo: nuevoCliente.celularCompleto,
-        cuenta_id: nuevoCliente.cuentaId,
-        perfil_id: nuevoCliente.perfilId,
+        nombre: nuevoCliente.nombre || `Cliente ${celularLimpio}`,
+        codigo_pais: codigoPaisLimpio,
+        celular: celularLimpio,
+        celular_completo: celularCompleto,
+        cuenta_id: isNaN(cuentaIdNum) ? null : cuentaIdNum,
+        perfil_id: isNaN(perfilIdNum) ? null : perfilIdNum,
         pin: nuevoCliente.pin || '',
         fecha_inicio: nuevoCliente.fechaInicio,
         fecha_vencimiento: nuevoCliente.fechaVencimiento,
-        precio_cobrado: nuevoCliente.precioCobrado || 0,
+        precio_cobrado: Number(nuevoCliente.precioCobrado) || 0,
         notas: nuevoCliente.notas || null
       })
       .select()
@@ -279,7 +285,7 @@ export async function guardarClienteEnSupabase(nuevoCliente) {
     if (errCli) throw errCli;
 
     // 2. Marcar el perfil como 'asignado'
-    if (nuevoCliente.perfilId) {
+    if (perfilIdNum && !isNaN(perfilIdNum)) {
       await supabase
         .from('perfiles')
         .update({
@@ -287,12 +293,15 @@ export async function guardarClienteEnSupabase(nuevoCliente) {
           cliente_id: clienteCreado.id,
           pin: nuevoCliente.pin || ''
         })
-        .eq('id', nuevoCliente.perfilId);
+        .eq('id', perfilIdNum);
     }
 
     return {
       ...nuevoCliente,
-      id: clienteCreado.id
+      id: clienteCreado.id,
+      cuentaId: clienteCreado.cuenta_id,
+      perfilId: clienteCreado.perfil_id,
+      celularCompleto
     };
   } catch (err) {
     console.error('Error guardando cliente en Supabase:', err);
@@ -307,19 +316,26 @@ export async function actualizarClienteEnSupabase(clienteActualizado, perfilAnte
   if (!supabase) return null;
 
   try {
+    const celularLimpio = String(clienteActualizado.celular || '').trim();
+    const codigoPaisLimpio = String(clienteActualizado.codigoPais || '+51').trim();
+    const celularCompleto = clienteActualizado.celularCompleto || `${codigoPaisLimpio}${celularLimpio}`;
+    const cuentaIdNum = clienteActualizado.cuentaId ? parseInt(clienteActualizado.cuentaId, 10) : null;
+    const perfilIdNum = clienteActualizado.perfilId ? parseInt(clienteActualizado.perfilId, 10) : null;
+    const perfilAnteriorIdNum = perfilAnteriorId ? parseInt(perfilAnteriorId, 10) : null;
+
     const { error: errCli } = await supabase
       .from('clientes')
       .update({
         nombre: clienteActualizado.nombre,
-        codigo_pais: clienteActualizado.codigoPais,
-        celular: clienteActualizado.celular,
-        celular_completo: clienteActualizado.celularCompleto,
-        cuenta_id: clienteActualizado.cuentaId,
-        perfil_id: clienteActualizado.perfilId,
+        codigo_pais: codigoPaisLimpio,
+        celular: celularLimpio,
+        celular_completo: celularCompleto,
+        cuenta_id: isNaN(cuentaIdNum) ? null : cuentaIdNum,
+        perfil_id: isNaN(perfilIdNum) ? null : perfilIdNum,
         pin: clienteActualizado.pin,
         fecha_inicio: clienteActualizado.fechaInicio,
         fecha_vencimiento: clienteActualizado.fechaVencimiento,
-        precio_cobrado: clienteActualizado.precioCobrado,
+        precio_cobrado: Number(clienteActualizado.precioCobrado) || 0,
         notas: clienteActualizado.notas
       })
       .eq('id', clienteActualizado.id);
@@ -327,28 +343,30 @@ export async function actualizarClienteEnSupabase(clienteActualizado, perfilAnte
     if (errCli) throw errCli;
 
     // Si cambió de perfil
-    if (perfilAnteriorId && perfilAnteriorId !== clienteActualizado.perfilId) {
+    if (perfilAnteriorIdNum && perfilAnteriorIdNum !== perfilIdNum) {
       // Liberar anterior
       await supabase
         .from('perfiles')
         .update({ estado: 'disponible', cliente_id: null })
-        .eq('id', perfilAnteriorId);
+        .eq('id', perfilAnteriorIdNum);
 
       // Asignar nuevo
-      await supabase
-        .from('perfiles')
-        .update({
-          estado: 'asignado',
-          cliente_id: clienteActualizado.id,
-          pin: clienteActualizado.pin
-        })
-        .eq('id', clienteActualizado.perfilId);
-    } else if (clienteActualizado.perfilId) {
+      if (perfilIdNum && !isNaN(perfilIdNum)) {
+        await supabase
+          .from('perfiles')
+          .update({
+            estado: 'asignado',
+            cliente_id: clienteActualizado.id,
+            pin: clienteActualizado.pin
+          })
+          .eq('id', perfilIdNum);
+      }
+    } else if (perfilIdNum && !isNaN(perfilIdNum)) {
       // Actualizar PIN en el perfil
       await supabase
         .from('perfiles')
         .update({ pin: clienteActualizado.pin })
-        .eq('id', clienteActualizado.perfilId);
+        .eq('id', perfilIdNum);
     }
 
     return true;

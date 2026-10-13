@@ -145,9 +145,9 @@ export default function App() {
     setData(prev => {
       // Actualizar perfil en la cuenta correspondiente
       const updatedCuentas = prev.cuentas.map(cta => {
-        if (cta.id === clientToSave.cuentaId) {
+        if (String(cta.id) === String(clientToSave.cuentaId)) {
           const updatedPerfiles = (cta.perfiles || []).map(p => {
-            if (p.id === clientToSave.perfilId) {
+            if (String(p.id) === String(clientToSave.perfilId)) {
               return { 
                 ...p, 
                 pin: clientToSave.pin || p.pin, 
@@ -170,8 +170,8 @@ export default function App() {
     });
 
     // Abrir automáticamente el modal de WhatsApp para entregar los accesos al cliente
-    const cta = cuentas.find(c => c.id === clientToSave.cuentaId);
-    const prf = cta?.perfiles?.find(p => p.id === clientToSave.perfilId);
+    const cta = cuentas.find(c => String(c.id) === String(clientToSave.cuentaId));
+    const prf = cta?.perfiles?.find(p => String(p.id) === String(clientToSave.perfilId));
     setWhatsAppSelection({
       cliente: clientToSave,
       perfil: prf || { nombre: 'Perfil asignado', pin: clientToSave.pin },
@@ -182,7 +182,7 @@ export default function App() {
 
   // 2. Renovar Membresía de Cliente (+30 Días y suma ingreso)
   const handleRenewClient = async (clienteId) => {
-    const cli = clientes.find(c => c.id === clienteId);
+    const cli = clientes.find(c => String(c.id) === String(clienteId));
     if (!cli) return;
     const hoy = getTodayDate();
     const diasRestantes = calcularDiasRestantes(cli.fechaVencimiento);
@@ -199,7 +199,7 @@ export default function App() {
 
     setData(prev => {
       const updatedClientes = prev.clientes.map(c => {
-        if (c.id === clienteId) {
+        if (String(c.id) === String(clienteId)) {
           return {
             ...c,
             fechaVencimiento: nuevaFechaVencimiento,
@@ -234,13 +234,13 @@ export default function App() {
       let updatedCuentas = prev.cuentas;
 
       // Si se reasignó de perfil, liberar el perfil anterior y asignar el nuevo
-      if (perfilAnteriorId && perfilAnteriorId !== clienteActualizado.perfilId) {
+      if (perfilAnteriorId && String(perfilAnteriorId) !== String(clienteActualizado.perfilId)) {
         updatedCuentas = updatedCuentas.map(cta => {
           const updatedPerfiles = (cta.perfiles || []).map(p => {
-            if (p.id === perfilAnteriorId) {
+            if (String(p.id) === String(perfilAnteriorId)) {
               return { ...p, estado: 'disponible', clienteId: null };
             }
-            if (p.id === clienteActualizado.perfilId) {
+            if (String(p.id) === String(clienteActualizado.perfilId)) {
               return { ...p, estado: 'asignado', clienteId: clienteActualizado.id, pin: clienteActualizado.pin || p.pin };
             }
             return p;
@@ -250,9 +250,9 @@ export default function App() {
       } else {
         // Si el perfil es el mismo, asegurar que el PIN se sincronice en el perfil de la cuenta
         updatedCuentas = updatedCuentas.map(cta => {
-          if (cta.id === clienteActualizado.cuentaId) {
+          if (String(cta.id) === String(clienteActualizado.cuentaId)) {
             const updatedPerfiles = (cta.perfiles || []).map(p => {
-              if (p.id === clienteActualizado.perfilId) {
+              if (String(p.id) === String(clienteActualizado.perfilId)) {
                 return { ...p, pin: clienteActualizado.pin || p.pin };
               }
               return p;
@@ -264,7 +264,7 @@ export default function App() {
       }
 
       const updatedClientes = prev.clientes.map(cli => 
-        cli.id === clienteActualizado.id ? clienteActualizado : cli
+        String(cli.id) === String(clienteActualizado.id) ? clienteActualizado : cli
       );
 
       return { ...prev, cuentas: updatedCuentas, clientes: updatedClientes };
@@ -291,7 +291,7 @@ export default function App() {
       // Liberar el perfil en las cuentas maestras
       const updatedCuentas = prev.cuentas.map(cta => {
         const updatedPerfiles = (cta.perfiles || []).map(p => {
-          if (p.id === perfilId || p.clienteId === clienteId) {
+          if (String(p.id) === String(perfilId) || String(p.clienteId) === String(clienteId)) {
             return { ...p, estado: 'disponible', clienteId: null };
           }
           return p;
@@ -299,7 +299,7 @@ export default function App() {
         return { ...cta, perfiles: updatedPerfiles };
       });
 
-      const updatedClientes = prev.clientes.filter(c => c.id !== clienteId);
+      const updatedClientes = prev.clientes.filter(c => String(c.id) !== String(clienteId));
       return { ...prev, cuentas: updatedCuentas, clientes: updatedClientes };
     });
   };
@@ -340,7 +340,7 @@ export default function App() {
 
     setData(prev => {
       const updatedCuentas = prev.cuentas.map(cta => 
-        cta.id === cuentaActualizada.id ? cuentaActualizada : cta
+        String(cta.id) === String(cuentaActualizada.id) ? cuentaActualizada : cta
       );
       return { ...prev, cuentas: updatedCuentas };
     });
@@ -348,7 +348,7 @@ export default function App() {
 
   // 4.3. Renovar Cuenta Maestra (+30 Días de corte mensual y descuenta de ganancia)
   const handleRenewAccount = async (cuentaId) => {
-    const cta = cuentas.find(c => c.id === cuentaId);
+    const cta = cuentas.find(c => String(c.id) === String(cuentaId));
     if (!cta) return;
     const costoFormateado = Number(cta.costo || 0).toFixed(2);
     const confirmar = window.confirm(
@@ -374,7 +374,7 @@ export default function App() {
 
     setData(prev => {
       const updatedCuentas = prev.cuentas.map(c => {
-        if (c.id === cuentaId) {
+        if (String(c.id) === String(cuentaId)) {
           return {
             ...c,
             fechaCorte: nuevaFechaCorte,
@@ -402,11 +402,11 @@ export default function App() {
     }
 
     setData(prev => {
-      const ctaAEliminar = prev.cuentas.find(c => c.id === cuentaId);
-      const perfilIds = (ctaAEliminar?.perfiles || []).map(p => p.id);
+      const ctaAEliminar = prev.cuentas.find(c => String(c.id) === String(cuentaId));
+      const perfilIds = (ctaAEliminar?.perfiles || []).map(p => String(p.id));
 
-      const updatedCuentas = prev.cuentas.filter(c => c.id !== cuentaId);
-      const updatedClientes = prev.clientes.filter(cli => !perfilIds.includes(cli.perfilId));
+      const updatedCuentas = prev.cuentas.filter(c => String(c.id) !== String(cuentaId));
+      const updatedClientes = prev.clientes.filter(cli => !perfilIds.includes(String(cli.perfilId)));
 
       return { ...prev, cuentas: updatedCuentas, clientes: updatedClientes };
     });
@@ -426,7 +426,7 @@ export default function App() {
 
     setData(prev => {
       const updatedClientes = prev.clientes.map(c => {
-        if (c.id === clienteId) {
+        if (String(c.id) === String(clienteId)) {
           return { ...c, recordatorioEnviado: true };
         }
         return c;

@@ -25,21 +25,24 @@ export function NewClientModal({
 
   // Filtrar cuentas que tienen al menos un perfil libre (o la cuenta preseleccionada)
   const cuentasConDisponibilidad = cuentas.filter(cta => {
-    return (cta.perfiles || []).some(p => p.estado === 'disponible' || p.id === preselectedPerfilId);
+    return (cta.perfiles || []).some(p => p.estado === 'disponible' || (preselectedPerfilId && String(p.id) === String(preselectedPerfilId)));
   });
 
   // Al abrir o cambiar preselección
   useEffect(() => {
     if (isOpen) {
       setErrorMsg('');
+      setNombre('');
+      setCelular('');
+      setNotas('');
       setFechaInicio(getTodayDate());
       setFechaVencimiento(addDays(getTodayDate(), 30)); // Requerimiento: 30 días de duración
 
       if (preselectedCuentaId && preselectedPerfilId) {
         setCuentaSeleccionadaId(preselectedCuentaId);
         setPerfilSeleccionadoId(preselectedPerfilId);
-        const cta = cuentas.find(c => c.id === preselectedCuentaId);
-        const prf = cta?.perfiles?.find(p => p.id === preselectedPerfilId);
+        const cta = cuentas.find(c => String(c.id) === String(preselectedCuentaId));
+        const prf = cta?.perfiles?.find(p => String(p.id) === String(preselectedPerfilId));
         if (prf) setPin(prf.pin || '');
       } else if (cuentasConDisponibilidad.length > 0) {
         const primeraCuenta = cuentasConDisponibilidad[0];
@@ -60,7 +63,7 @@ export function NewClientModal({
   // Al cambiar la cuenta seleccionada
   const handleCambiarCuenta = (ctaId) => {
     setCuentaSeleccionadaId(ctaId);
-    const cta = cuentas.find(c => c.id === ctaId);
+    const cta = cuentas.find(c => String(c.id) === String(ctaId));
     const primerPerfilLibre = cta?.perfiles?.find(p => p.estado === 'disponible');
     if (primerPerfilLibre) {
       setPerfilSeleccionadoId(primerPerfilLibre.id);
@@ -74,8 +77,8 @@ export function NewClientModal({
   // Al cambiar el perfil seleccionado
   const handleCambiarPerfil = (prfId) => {
     setPerfilSeleccionadoId(prfId);
-    const cta = cuentas.find(c => c.id === cuentaSeleccionadaId);
-    const prf = cta?.perfiles?.find(p => p.id === prfId);
+    const cta = cuentas.find(c => String(c.id) === String(cuentaSeleccionadaId));
+    const prf = cta?.perfiles?.find(p => String(p.id) === String(prfId));
     if (prf) {
       setPin(prf.pin || '');
     }
@@ -88,10 +91,18 @@ export function NewClientModal({
   };
 
   // Obtener perfiles disponibles de la cuenta actual
-  const cuentaActual = cuentas.find(c => c.id === cuentaSeleccionadaId);
+  const cuentaActual = cuentas.find(c => String(c.id) === String(cuentaSeleccionadaId));
   const perfilesDisponiblesCuenta = (cuentaActual?.perfiles || []).filter(
-    p => p.estado === 'disponible' || p.id === preselectedPerfilId
+    p => p.estado === 'disponible' || (preselectedPerfilId && String(p.id) === String(preselectedPerfilId))
   );
+
+  const handleCloseModal = () => {
+    setNombre('');
+    setCelular('');
+    setNotas('');
+    setErrorMsg('');
+    onClose();
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -104,11 +115,13 @@ export function NewClientModal({
       return;
     }
 
+    const celularLimpio = celular.trim();
     const nuevoCliente = {
       id: 'cli-' + generarId(),
-      nombre: nombre.trim() || `Cliente ${celular.trim()}`,
+      nombre: nombre.trim() || `Cliente ${celularLimpio}`,
       codigoPais,
-      celular: celular.trim(),
+      celular: celularLimpio,
+      celularCompleto: `${codigoPais}${celularLimpio}`,
       cuentaId: cuentaSeleccionadaId,
       perfilId: perfilSeleccionadoId,
       pin: pin.trim(),
@@ -120,13 +133,19 @@ export function NewClientModal({
     };
 
     onSaveClient(nuevoCliente);
+
+    // Limpiar campos para la próxima apertura
+    setNombre('');
+    setCelular('');
+    setNotas('');
+    setErrorMsg('');
     onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleCloseModal}>
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -149,7 +168,7 @@ export function NewClientModal({
               </p>
             </div>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>
+          <button className="modal-close-btn" onClick={handleCloseModal}>
             <X size={20} />
           </button>
         </div>
@@ -357,7 +376,7 @@ export function NewClientModal({
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+            <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
               Cancelar
             </button>
             <button type="submit" className="btn btn-primary">
