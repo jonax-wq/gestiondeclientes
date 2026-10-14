@@ -132,7 +132,15 @@ export function DeleteClientModal({
               <div>
                 <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.75rem' }}>Estado actual:</span>
                 <span style={{ color: diasRestantes < 0 ? '#f87171' : diasRestantes <= 2 ? '#fbbf24' : '#34d399', fontWeight: 600 }}>
-                  {diasRestantes < 0 ? `Vencido hace ${Math.abs(diasRestantes)}d` : `Activo (${diasRestantes}d restantes)`}
+                  {diasRestantes < 0 
+                    ? `⛔ Venció hace ${Math.abs(diasRestantes)} ${Math.abs(diasRestantes) === 1 ? 'día' : 'días'}` 
+                    : diasRestantes === 0 
+                    ? `🔥 Vence hoy` 
+                    : diasRestantes === 1 
+                    ? `⚠️ Vence en 1 día` 
+                    : diasRestantes === 2 
+                    ? `⚠️ Vence en 2 días` 
+                    : `🟢 Vence en ${diasRestantes} días`}
                 </span>
               </div>
             </div>

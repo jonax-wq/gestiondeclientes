@@ -159,24 +159,24 @@ export function WhatsAppModal({
 
             {/* Badge de alerta de días */}
             <div>
-              {diasRestantes === 2 && (
-                <span className="expiry-tag urgent-2 pulse-amber">
-                  ⚠️ Vence en 2 días
-                </span>
-              )}
-              {diasRestantes === 1 && (
-                <span className="expiry-tag urgent-2 pulse-amber">
-                  🚨 Vence mañana
+              {diasRestantes < 0 && (
+                <span className="expiry-tag expired">
+                  ⛔ Venció hace {Math.abs(diasRestantes)} {Math.abs(diasRestantes) === 1 ? 'día' : 'días'}
                 </span>
               )}
               {diasRestantes === 0 && (
                 <span className="expiry-tag urgent-today pulse-attention">
-                  🔥 Vence HOY
+                  🔥 Vence hoy
                 </span>
               )}
-              {diasRestantes < 0 && (
-                <span className="expiry-tag expired">
-                  ⛔ Vencido hace {Math.abs(diasRestantes)} días
+              {diasRestantes === 1 && (
+                <span className="expiry-tag urgent-2 pulse-amber">
+                  ⚠️ Vence en 1 día
+                </span>
+              )}
+              {diasRestantes === 2 && (
+                <span className="expiry-tag urgent-2 pulse-amber">
+                  ⚠️ Vence en 2 días
                 </span>
               )}
               {diasRestantes > 2 && (

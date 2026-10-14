@@ -302,29 +302,29 @@ export function ClientsView({
 
                       {/* Estado & Días restantes */}
                       <td>
-                        {diasRestantes === 2 && (
-                          <span className="expiry-tag urgent-2 pulse-amber" title="Faltan exactamente 2 días para que acabe su membresía">
-                            ⚠️ ¡Vence en 2 días!
-                          </span>
-                        )}
-                        {diasRestantes === 1 && (
-                          <span className="expiry-tag urgent-2 pulse-amber" title="Falta 1 día para que acabe su membresía">
-                            🚨 ¡Vence mañana!
+                        {diasRestantes < 0 && (
+                          <span className="expiry-tag expired">
+                            ⛔ Venció hace {Math.abs(diasRestantes)} {Math.abs(diasRestantes) === 1 ? 'día' : 'días'}
                           </span>
                         )}
                         {diasRestantes === 0 && (
                           <span className="expiry-tag urgent-today pulse-attention" title="Su membresía vence hoy">
-                            🔥 ¡Vence HOY!
+                            🔥 Vence hoy
                           </span>
                         )}
-                        {diasRestantes < 0 && (
-                          <span className="expiry-tag expired">
-                            ⛔ Vencido hace {Math.abs(diasRestantes)}d
+                        {diasRestantes === 1 && (
+                          <span className="expiry-tag urgent-2 pulse-amber" title="Falta 1 día para que acabe su membresía">
+                            ⚠️ Vence en 1 día
+                          </span>
+                        )}
+                        {diasRestantes === 2 && (
+                          <span className="expiry-tag urgent-2 pulse-amber" title="Faltan exactamente 2 días para que acabe su membresía">
+                            ⚠️ Vence en 2 días
                           </span>
                         )}
                         {diasRestantes > 2 && (
                           <span className="expiry-tag active">
-                            🟢 Activo ({diasRestantes} días)
+                            🟢 Vence en {diasRestantes} días
                           </span>
                         )}
                       </td>
@@ -458,29 +458,29 @@ export function ClientsView({
 
                       {/* Tag de vencimiento */}
                       <div>
+                        {diasRestantes < 0 && (
+                          <span className="expiry-tag expired" style={{ fontSize: '0.75rem' }}>
+                            ⛔ Venció hace {Math.abs(diasRestantes)} {Math.abs(diasRestantes) === 1 ? 'día' : 'días'}
+                          </span>
+                        )}
+                        {diasRestantes === 0 && (
+                          <span className="expiry-tag urgent-today pulse-attention" style={{ fontSize: '0.75rem' }}>
+                            🔥 Vence hoy
+                          </span>
+                        )}
+                        {diasRestantes === 1 && (
+                          <span className="expiry-tag urgent-2 pulse-amber" style={{ fontSize: '0.75rem' }}>
+                            ⚠️ Vence en 1 día
+                          </span>
+                        )}
                         {diasRestantes === 2 && (
                           <span className="expiry-tag urgent-2 pulse-amber" style={{ fontSize: '0.75rem' }}>
                             ⚠️ Vence en 2 días
                           </span>
                         )}
-                        {diasRestantes === 1 && (
-                          <span className="expiry-tag urgent-2 pulse-amber" style={{ fontSize: '0.75rem' }}>
-                            🚨 Vence mañana
-                          </span>
-                        )}
-                        {diasRestantes === 0 && (
-                          <span className="expiry-tag urgent-today pulse-attention" style={{ fontSize: '0.75rem' }}>
-                            🔥 Vence HOY
-                          </span>
-                        )}
-                        {diasRestantes < 0 && (
-                          <span className="expiry-tag expired" style={{ fontSize: '0.75rem' }}>
-                            ⛔ Vencido {Math.abs(diasRestantes)}d
-                          </span>
-                        )}
                         {diasRestantes > 2 && (
                           <span className="expiry-tag active" style={{ fontSize: '0.75rem' }}>
-                            🟢 Vence en {diasRestantes}d
+                            🟢 Vence en {diasRestantes} días
                           </span>
                         )}
                       </div>
