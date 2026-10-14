@@ -7,7 +7,7 @@ export function Pagination({
   itemsPerPage = 10,
   onPageChange,
   onItemsPerPageChange,
-  pageSizeOptions = [10, 25, 50],
+  pageSizeOptions = [5, 10, 25, 50, 100],
   itemLabel = 'elementos'
 }) {
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
@@ -71,9 +71,8 @@ export function Pagination({
         )}
       </div>
 
-      {/* Controles de navegación */}
-      {totalPages > 1 && (
-        <div className="pagination-nav">
+      {/* Controles de navegación siempre visibles cuando hay elementos */}
+      <div className="pagination-nav">
           {/* Ir a la primera página */}
           <button
             type="button"
@@ -148,7 +147,6 @@ export function Pagination({
             <ChevronsRight size={16} />
           </button>
         </div>
-      )}
     </div>
   );
 }

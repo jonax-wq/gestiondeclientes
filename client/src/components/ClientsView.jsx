@@ -567,7 +567,7 @@ export function ClientsView({
             onItemsPerPageChange={(newSize) => {
               setItemsPerPage(newSize);
             }}
-            pageSizeOptions={[10, 25, 50, 100]}
+            pageSizeOptions={[5, 10, 25, 50, 100]}
             itemLabel="clientes"
           />
         </>

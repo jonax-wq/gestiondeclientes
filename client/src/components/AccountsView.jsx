@@ -697,7 +697,7 @@ export function AccountsView({
           onItemsPerPageChange={(newSize) => {
             setItemsPerPage(newSize);
           }}
-          pageSizeOptions={[6, 12, 24, 48]}
+          pageSizeOptions={[3, 6, 12, 24, 48]}
           itemLabel="cuentas"
         />
       </>
