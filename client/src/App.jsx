@@ -466,7 +466,6 @@ export default function App() {
         onNewAccount={() => setIsNewAccountOpen(true)}
         urgentCount={urgentClients.length}
         onFilterUrgent={() => { setActiveTab('clientes'); setClientFilter('por_vencer'); }}
-        isCloudConnected={isCloudConnected}
       />
 
       {/* 2. Banner de Alerta Urgente (≤ 2 Días) */}
