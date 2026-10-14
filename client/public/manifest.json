@@ -4,13 +4,13 @@
   "description": "Sistema profesional de gestión de cuentas de streaming, perfiles y clientes con WhatsApp integrado.",
   "icons": [
     {
-      "src": "/pwa-192x192.png",
+      "src": "/flow_logo.png",
       "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any"
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
     },
     {
-      "src": "/pwa-512x512.png",
+      "src": "/flow_logo.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"

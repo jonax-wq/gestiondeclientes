@@ -1,6 +1,5 @@
 import React from 'react';
 import { UserPlus, PlusCircle, Bell, Download } from 'lucide-react';
-import { FlowStreamLogo } from './icons/FlowStreamLogo';
 
 export function Navbar({ 
   onNewClient, 
@@ -15,7 +14,18 @@ export function Navbar({
     <header className="navbar">
       <div className="brand-wrapper">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <FlowStreamLogo size={38} />
+          <img 
+            src="/flow_logo.png" 
+            alt="Flow Stream Logo" 
+            style={{ 
+              width: '42px', 
+              height: '42px', 
+              borderRadius: '12px',
+              objectFit: 'cover',
+              border: '1px solid rgba(99, 102, 241, 0.45)',
+              boxShadow: '0 0 16px rgba(99, 102, 241, 0.4)'
+            }} 
+          />
         </div>
         <div>
           <div className="brand-title">
