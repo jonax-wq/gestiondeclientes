@@ -106,7 +106,7 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 16px;
 }
 
@@ -114,6 +114,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   gap: 14px;
+  flex-shrink: 0;
 }
 
 .brand-logo-icon {
@@ -162,7 +163,8 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 
 /* Botones y Acciones */
@@ -1273,6 +1275,24 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(244, 63, 94, 0.2);
   color: #fb7185;
   border-color: rgba(244, 63, 94, 0.4);
+}
+
+/* Para pantallas intermedias / laptops con zoom, asegurar que la navbar siempre quede en una sola fila */
+@media (max-width: 1180px) and (min-width: 769px) {
+  .navbar {
+    padding: 12px 18px;
+    gap: 12px;
+  }
+  .brand-subtitle {
+    display: none;
+  }
+  .nav-actions {
+    gap: 8px;
+  }
+  .nav-actions .btn {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
 }
 
 /* ====================================================================

@@ -1,14 +1,12 @@
 import React from 'react';
-import { UserPlus, PlusCircle, Bell, Download } from 'lucide-react';
+import { UserPlus, PlusCircle, Bell } from 'lucide-react';
 
 export function Navbar({ 
   onNewClient, 
   onNewAccount, 
   urgentCount,
   onFilterUrgent,
-  isCloudConnected,
-  isInstallable,
-  onInstallPWA
+  isCloudConnected
 }) {
   return (
     <header className="navbar">
@@ -51,7 +49,8 @@ export function Navbar({
               borderRadius: 'var(--radius-pill)',
               fontSize: '0.78rem',
               color: '#34d399',
-              fontWeight: 600
+              fontWeight: 600,
+              whiteSpace: 'nowrap'
             }} 
             title="Conectado en vivo a tu Base de Datos Supabase (PostgreSQL en la Nube)"
           >
@@ -67,23 +66,6 @@ export function Navbar({
           </div>
         )}
 
-        {isInstallable && (
-          <button 
-            type="button"
-            className="btn btn-secondary pulse-subtle"
-            onClick={onInstallPWA}
-            title="Instalar Flow Stream en la pantalla de inicio de tu celular o computadora"
-            style={{
-              borderColor: 'rgba(99, 102, 241, 0.5)',
-              color: '#c7d2fe',
-              background: 'rgba(99, 102, 241, 0.15)'
-            }}
-          >
-            <Download size={17} />
-            <span>Instalar App</span>
-          </button>
-        )}
-
         {urgentCount > 0 && (
           <button 
             className="btn btn-secondary pulse-amber"
@@ -91,7 +73,8 @@ export function Navbar({
             style={{ 
               borderColor: 'rgba(245, 158, 11, 0.6)', 
               color: '#fbbf24', 
-              background: 'rgba(245, 158, 11, 0.15)' 
+              background: 'rgba(245, 158, 11, 0.15)',
+              whiteSpace: 'nowrap'
             }}
             title="Ver clientes a los que les faltan 2 días o menos para vencer"
           >
@@ -104,6 +87,7 @@ export function Navbar({
           className="btn btn-secondary" 
           onClick={onNewAccount}
           title="Registrar una nueva cuenta maestra con sus perfiles"
+          style={{ whiteSpace: 'nowrap' }}
         >
           <PlusCircle size={18} />
           <span>Nueva Cuenta</span>
@@ -113,6 +97,7 @@ export function Navbar({
           className="btn btn-primary" 
           onClick={onNewClient}
           title="Asignar un nuevo cliente a un perfil disponible"
+          style={{ whiteSpace: 'nowrap' }}
         >
           <UserPlus size={18} />
           <span>+ Asignar Cliente</span>

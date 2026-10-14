@@ -467,8 +467,6 @@ export default function App() {
         urgentCount={urgentClients.length}
         onFilterUrgent={() => { setActiveTab('clientes'); setClientFilter('por_vencer'); }}
         isCloudConnected={isCloudConnected}
-        isInstallable={isInstallable}
-        onInstallPWA={handleInstallPWA}
       />
 
       {/* 2. Banner de Alerta Urgente (≤ 2 Días) */}
