@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   MessageCircle, 
@@ -19,6 +19,7 @@ import {
 import { PLATFORMS } from '../constants/platforms';
 import { calcularDiasRestantes, formatearFecha } from '../utils/storage';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
+import { Pagination } from './Pagination';
 
 export function ClientsView({ 
   clientes = [], 
@@ -33,6 +34,8 @@ export function ClientsView({
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [celularCopiado, setCelularCopiado] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Mapeo rápido de cuenta y perfil por ID
   const cuentasMap = {};
@@ -79,6 +82,18 @@ export function ClientsView({
       pin.includes(term)
     );
   });
+
+  // Resetear a la página 1 cuando cambia el filtro o término de búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeFilter]);
+
+  // Cálculo de paginación
+  const totalItems = clientesFiltrados.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+  const paginatedClientes = clientesFiltrados.slice(startIndex, startIndex + itemsPerPage);
 
   // Conteo de por vencer a 2 días o menos
   const urgentCount = clientes.filter(c => {
@@ -195,7 +210,7 @@ export function ClientsView({
                 </tr>
               </thead>
               <tbody>
-                {clientesFiltrados.map((cli) => {
+                {paginatedClientes.map((cli) => {
                   const diasRestantes = calcularDiasRestantes(cli.fechaVencimiento);
                   const perfilInfo = perfilesMap[cli.perfilId];
                   const cuentaInfo = cuentasMap[cli.cuentaId] || perfilInfo?.cuenta;
@@ -376,7 +391,7 @@ export function ClientsView({
 
           {/* VISTA 2: TARJETAS MÓVILES TÁCTILES (Especial para Celular <= 768px) */}
           <div className="mobile-cards-view">
-            {clientesFiltrados.map((cli) => {
+            {paginatedClientes.map((cli) => {
               const diasRestantes = calcularDiasRestantes(cli.fechaVencimiento);
               const perfilInfo = perfilesMap[cli.perfilId];
               const cuentaInfo = cuentasMap[cli.cuentaId] || perfilInfo?.cuenta;
@@ -539,6 +554,22 @@ export function ClientsView({
               );
             })}
           </div>
+
+          {/* Paginación de Clientes */}
+          <Pagination
+            currentPage={safeCurrentPage}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onItemsPerPageChange={(newSize) => {
+              setItemsPerPage(newSize);
+            }}
+            pageSizeOptions={[10, 25, 50, 100]}
+            itemLabel="clientes"
+          />
         </>
       )}
     </div>

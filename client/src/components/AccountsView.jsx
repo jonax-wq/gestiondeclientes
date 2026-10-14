@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Tv,
   Key,
@@ -24,6 +24,7 @@ import {
 import { PLATFORMS } from '../constants/platforms';
 import { formatearFecha, calcularDiasRestantes } from '../utils/storage';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
+import { Pagination } from './Pagination';
 
 export function AccountsView({
   cuentas = [],
@@ -41,6 +42,8 @@ export function AccountsView({
   const [allExpanded, setAllExpanded] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState('Todas');
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(6);
 
   const toggleExpand = (cuentaId) => {
     setExpandedAccounts(prev => ({
@@ -107,6 +110,18 @@ export function AccountsView({
 
     return true;
   });
+
+  // Resetear a la página 1 cuando cambia el filtro de plataforma o búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedPlatform, searchTerm]);
+
+  // Cálculo de paginación
+  const totalItems = cuentasFiltradas.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+  const paginatedCuentas = cuentasFiltradas.slice(startIndex, startIndex + itemsPerPage);
 
   const togglePassword = (cuentaId) => {
     setShowPassword(prev => ({ ...prev, [cuentaId]: !prev[cuentaId] }));
@@ -283,8 +298,9 @@ export function AccountsView({
           </div>
         </div>
       ) : (
-        <div className="accounts-grid">
-          {cuentasFiltradas.map(cta => {
+        <>
+          <div className="accounts-grid">
+          {paginatedCuentas.map(cta => {
             const platformInfo = PLATFORMS[cta.plataforma] || PLATFORMS.Otro;
             const perfiles = cta.perfiles || [];
             const ocupados = perfiles.filter(p => p.estado === 'asignado').length;
@@ -668,7 +684,24 @@ export function AccountsView({
             );
           })}
         </div>
-      )}
-    </div>
-  );
+
+        {/* Paginación de Cuentas */}
+        <Pagination
+          currentPage={safeCurrentPage}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(page) => {
+            setCurrentPage(page);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onItemsPerPageChange={(newSize) => {
+            setItemsPerPage(newSize);
+          }}
+          pageSizeOptions={[6, 12, 24, 48]}
+          itemLabel="cuentas"
+        />
+      </>
+    )}
+  </div>
+);
 }
