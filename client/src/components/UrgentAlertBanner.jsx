@@ -9,25 +9,26 @@ export function UrgentAlertBanner({ urgentClients = [], onActionClick }) {
     <div className="urgent-banner">
       <div className="urgent-banner-content">
         <div className="urgent-icon-box">
-          <AlertCircle size={24} />
+          <AlertCircle size={22} />
         </div>
-        <div>
+        <div className="urgent-text-box">
           <h3 className="urgent-title">
-            ¡Tienes {urgentClients.length} {urgentClients.length === 1 ? 'cliente' : 'clientes'} con membresía por vencer (≤ 2 días)!
+            ¡Tienes {urgentClients.length} {urgentClients.length === 1 ? 'cliente' : 'clientes'} por vencer (≤ 2 días)!
           </h3>
           <p className="urgent-desc">
-            Envía el recordatorio por WhatsApp directamente con un solo clic para asegurar su renovación antes del corte.
+            Envía el recordatorio por WhatsApp con 1 clic para asegurar la renovación.
           </p>
         </div>
       </div>
 
       <button 
-        className="btn btn-whatsapp" 
+        className="btn btn-whatsapp urgent-action-btn" 
         onClick={onActionClick}
       >
-        <WhatsAppIcon size={19} color="#063c19" />
-        <span>Gestionar y Enviar WhatsApp</span>
-        <ArrowRight size={16} />
+        <WhatsAppIcon size={18} color="#063c19" />
+        <span className="hide-on-mobile">Gestionar y Enviar WhatsApp</span>
+        <span className="show-on-mobile">Enviar WhatsApp ({urgentClients.length})</span>
+        <ArrowRight size={15} />
       </button>
     </div>
   );

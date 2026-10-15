@@ -14,12 +14,14 @@ import {
   CheckCircle2, 
   Plus, 
   Sparkles,
-  Edit
+  Edit,
+  Receipt
 } from 'lucide-react';
 import { PLATFORMS } from '../constants/platforms';
-import { calcularDiasRestantes, formatearFecha } from '../utils/storage';
+import { calcularDiasRestantes, formatearFecha, verificarDesfase } from '../utils/storage';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
 import { Pagination } from './Pagination';
+import { useToast } from '../context/ToastContext';
 
 export function ClientsView({ 
   clientes = [], 
@@ -29,9 +31,11 @@ export function ClientsView({
   onDeleteClient, 
   onEditClient,
   onNewClient,
+  onOpenReceipt,
   activeFilter = 'todos',
   onFilterChange 
 }) {
+  const toast = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [celularCopiado, setCelularCopiado] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -59,11 +63,13 @@ export function ClientsView({
     const dias = calcularDiasRestantes(cli.fechaVencimiento);
     const perfilInfo = perfilesMap[cli.perfilId];
     const cuentaInfo = cuentasMap[cli.cuentaId] || perfilInfo?.cuenta;
+    const desfase = verificarDesfase(cuentaInfo?.fechaCorte, cli.fechaVencimiento);
 
     // Filtro por pestaña
     if (activeFilter === 'por_vencer' && (dias > 2 || dias < 0)) return false;
     if (activeFilter === 'vencidos' && dias >= 0) return false;
     if (activeFilter === 'activos' && dias < 0) return false;
+    if (activeFilter === 'desfase' && !desfase.tieneDesfase) return false;
 
     // Filtro por búsqueda
     if (!searchTerm.trim()) return true;
@@ -103,10 +109,18 @@ export function ClientsView({
 
   const expiredCount = clientes.filter(c => calcularDiasRestantes(c.fechaVencimiento) < 0).length;
   const activeCount = clientes.filter(c => calcularDiasRestantes(c.fechaVencimiento) >= 0).length;
+  
+  // Conteo de clientes con riesgo de desfase con su cuenta matriz
+  const desfaseCount = clientes.filter(c => {
+    const perfilInfo = perfilesMap[c.perfilId];
+    const cuentaInfo = cuentasMap[c.cuentaId] || perfilInfo?.cuenta;
+    return verificarDesfase(cuentaInfo?.fechaCorte, c.fechaVencimiento).tieneDesfase;
+  }).length;
 
   const handleCopiarCelular = (celular, id) => {
     navigator.clipboard.writeText(celular);
     setCelularCopiado(id);
+    toast.success('Número de WhatsApp copiado al portapapeles');
     setTimeout(() => setCelularCopiado(null), 2000);
   };
 
@@ -165,6 +179,25 @@ export function ClientsView({
             <span>Vencidos</span>
             <span className="counter-badge">{expiredCount}</span>
           </button>
+
+          {desfaseCount > 0 && (
+            <button 
+              className={`pill-btn ${activeFilter === 'desfase' ? 'active' : ''}`}
+              onClick={() => onFilterChange('desfase')}
+              style={{
+                borderColor: 'rgba(245, 158, 11, 0.5)',
+                color: '#fbbf24',
+                background: activeFilter === 'desfase' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245, 158, 11, 0.08)'
+              }}
+              title="Clientes cuya cuenta matriz vence antes que su membresía"
+            >
+              <AlertTriangle size={14} />
+              <span>Riesgo Desfase</span>
+              <span className="counter-badge" style={{ background: '#f59e0b', color: '#000' }}>
+                {desfaseCount}
+              </span>
+            </button>
+          )}
 
           <button className="btn btn-primary" onClick={onNewClient} style={{ padding: '7px 14px', fontSize: '0.82rem' }}>
             <Plus size={16} />
@@ -271,6 +304,19 @@ export function ClientsView({
                           <span style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
                             {perfilInfo?.nombre || `Perfil ${perfilInfo?.numero || '?'}`}
                           </span>
+                          {(() => {
+                            const desfase = verificarDesfase(cuentaInfo?.fechaCorte, cli.fechaVencimiento);
+                            if (!desfase.tieneDesfase) return null;
+                            return (
+                              <span 
+                                className="desfase-tag"
+                                title={`⚠️ Riesgo de corte: La cuenta matriz vence el ${formatearFecha(cuentaInfo?.fechaCorte)}, antes de los 30 días del cliente.`}
+                              >
+                                <AlertTriangle size={11} />
+                                <span>Corte matriz: {formatearFecha(cuentaInfo?.fechaCorte)}</span>
+                              </span>
+                            );
+                          })()}
                         </div>
                       </td>
 
@@ -353,9 +399,17 @@ export function ClientsView({
                         </div>
                       </td>
 
-                      {/* Acciones: Editar, Renovar (+30 días) y Liberar perfil */}
+                      {/* Acciones: Comprobante, Editar, Renovar (+30 días) y Liberar perfil */}
                       <td>
                         <div className="action-buttons-group" style={{ justifyContent: 'center' }}>
+                          <button
+                            type="button"
+                            className="btn-icon-action receipt"
+                            onClick={() => onOpenReceipt && onOpenReceipt(cli, perfilInfo, cuentaInfo)}
+                            title="Emitir Comprobante / Recibo Digital Oficial para WhatsApp"
+                          >
+                            <Receipt size={16} />
+                          </button>
                           <button
                             type="button"
                             className="btn-icon-action edit"
@@ -500,9 +554,32 @@ export function ClientsView({
                       <span>Inicio: <strong>{formatearFecha(cli.fechaInicio)}</strong></span>
                       <span>Vence (30d): <strong style={{ color: '#f8fafc' }}>{formatearFecha(cli.fechaVencimiento)}</strong></span>
                     </div>
+
+                    {/* Alerta de Desfase en Móvil */}
+                    {(() => {
+                      const desfase = verificarDesfase(cuentaInfo?.fechaCorte, cli.fechaVencimiento);
+                      if (!desfase.tieneDesfase) return null;
+                      return (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'rgba(245, 158, 11, 0.12)',
+                          border: '1px solid rgba(245, 158, 11, 0.4)',
+                          borderRadius: '6px',
+                          padding: '6px 10px',
+                          fontSize: '0.74rem',
+                          color: '#fbbf24',
+                          marginTop: '6px'
+                        }}>
+                          <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+                          <span>⚠️ Matriz corta el {formatearFecha(cuentaInfo?.fechaCorte)} ({desfase.diasDiferencia}d antes)</span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
-                  {/* Fila Inferior: Botones de Acción Móviles (WhatsApp Gigante + Renovar + Liberar) */}
+                  {/* Fila Inferior: Botones de Acción Móviles (WhatsApp Gigante + Recibo + Renovar + Liberar) */}
                   <div className="mobile-card-actions">
                     <button
                       type="button"
@@ -518,7 +595,18 @@ export function ClientsView({
                       )}
                     </button>
 
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary mobile-sub-btn receipt"
+                        onClick={() => onOpenReceipt && onOpenReceipt(cli, perfilInfo, cuentaInfo)}
+                        title="Emitir Comprobante Digital"
+                        style={{ borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38bdf8' }}
+                      >
+                        <Receipt size={14} />
+                        <span>Recibo</span>
+                      </button>
+
                       <button
                         type="button"
                         className="btn btn-secondary mobile-sub-btn edit"

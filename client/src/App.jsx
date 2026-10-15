@@ -1,25 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
+import { BottomNav } from './components/BottomNav';
 import { StatsHeader } from './components/StatsHeader';
 import { UrgentAlertBanner } from './components/UrgentAlertBanner';
 import { ClientsView } from './components/ClientsView';
 import { AccountsView } from './components/AccountsView';
+import { CodesView } from './components/CodesView';
+import { CustomerPortalView } from './components/CustomerPortalView';
+import { DatabaseModal } from './components/DatabaseModal';
 import { NewClientModal } from './components/NewClientModal';
 import { EditClientModal } from './components/EditClientModal';
 import { DeleteClientModal } from './components/DeleteClientModal';
 import { NewAccountModal } from './components/NewAccountModal';
 import { EditAccountModal } from './components/EditAccountModal';
 import { WhatsAppModal } from './components/WhatsAppModal';
+import { ReceiptModal } from './components/ReceiptModal';
+import { ConfirmModal } from './components/ConfirmModal';
 import { 
   cargarDatos, 
   guardarDatos, 
   calcularDiasRestantes, 
   addDays, 
-  getTodayDate 
+  getTodayDate,
+  actualizarPlantillasGuardadas,
+  formatearFecha,
+  verificarDesfase
 } from './utils/storage';
 import {
   isSupabaseConfigured,
   cargarDatosDesdeSupabase,
+  cargarPlantillasDesdeSupabase,
   guardarCuentaEnSupabase,
   actualizarCuentaEnSupabase,
   renovarCuentaEnSupabase,
@@ -31,14 +42,21 @@ import {
   marcarWhatsAppEnviadoEnSupabase,
   vaciarTodoEnSupabase
 } from './utils/supabaseClient';
-import { Users, Tv } from 'lucide-react';
+import { Users, Tv, KeyRound, Globe } from 'lucide-react';
+import { useToast } from './context/ToastContext';
 
 export default function App() {
+  const toast = useToast();
   const [data, setData] = useState(() => cargarDatos());
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [isLoadingCloud, setIsLoadingCloud] = useState(isSupabaseConfigured);
-  const [activeTab, setActiveTab] = useState('clientes'); // 'clientes' | 'cuentas'
+  const [activeTab, setActiveTab] = useState('clientes'); // 'clientes' | 'cuentas' | 'codigos' | 'portal'
   const [clientFilter, setClientFilter] = useState('todos'); // 'todos' | 'por_vencer' | 'activos' | 'vencidos'
+
+  // Estados de interfaz y Sidebar
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
 
   // PWA: Soporte para instalación en pantalla de inicio de celular/computadora
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -54,9 +72,21 @@ export default function App() {
   const [isEditAccountOpen, setIsEditAccountOpen] = useState(false);
   const [accountToEdit, setAccountToEdit] = useState(null);
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+
+  // Modal de confirmación estilizado
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirmar',
+    variant: 'danger',
+    onConfirm: () => {}
+  });
 
   // Selecciones para acciones específicas
-  const [whatsAppSelection, setWhatsAppSelection] = useState({ cliente: null, perfil: null, cuenta: null });
+  const [whatsAppSelection, setWhatsAppSelection] = useState({ cliente: null, perfil: null, cuenta: null, initialTemplate: null });
+  const [receiptSelection, setReceiptSelection] = useState({ cliente: null, perfil: null, cuenta: null });
   const [preselectedSlot, setPreselectedSlot] = useState({ cuentaId: null, perfilId: null });
 
   // Escuchar evento de instalación PWA
@@ -81,7 +111,11 @@ export default function App() {
 
   const handleInstallPWA = async () => {
     if (!deferredPrompt) {
-      alert('📱 Para agregar Flow Stream a la pantalla de inicio de tu celular:\n\n• En Android (Chrome): Toca el menú de 3 puntos arriba a la derecha y selecciona "Agregar a la pantalla principal" o "Instalar app".\n• En iPhone (Safari): Toca el botón Compartir (cuadrado con flecha hacia arriba) y selecciona "Agregar al inicio".');
+      toast.info(
+        '• En Android (Chrome): Toca el menú de 3 puntos y selecciona "Agregar a la pantalla principal".\n• En iPhone (Safari): Toca el botón Compartir y selecciona "Agregar al inicio".',
+        '📱 Instalar en Pantalla de Inicio',
+        { duration: 8000 }
+      );
       return;
     }
     try {
@@ -107,6 +141,12 @@ export default function App() {
             setData(cloudData);
             setIsCloudConnected(true);
           }
+
+          // Sincronizar plantillas de WhatsApp desde la nube
+          const cloudTemplates = await cargarPlantillasDesdeSupabase();
+          if (cloudTemplates) {
+            actualizarPlantillasGuardadas(cloudTemplates);
+          }
         } catch (err) {
           console.error('Error inicializando Supabase:', err);
         } finally {
@@ -129,6 +169,13 @@ export default function App() {
     const d = calcularDiasRestantes(c.fechaVencimiento);
     return d >= 0 && d <= 2;
   });
+
+  // Clientes con riesgo de desfase con su cuenta maestra
+  const desfaseTotalCount = clientes.filter(cli => {
+    const cta = cuentas.find(c => String(c.id) === String(cli.cuentaId));
+    if (!cta) return false;
+    return verificarDesfase(cta.fechaCorte, cli.fechaVencimiento).tieneDesfase;
+  }).length;
 
   // 1. Guardar Nuevo Cliente y marcar su perfil como 'asignado'
   const handleSaveClient = async (nuevoCliente) => {
@@ -169,13 +216,16 @@ export default function App() {
       };
     });
 
+    toast.success(`¡Cliente ${clientToSave.nombre} asignado con éxito!`, 'Asignación Exitosa');
+
     // Abrir automáticamente el modal de WhatsApp para entregar los accesos al cliente
     const cta = cuentas.find(c => String(c.id) === String(clientToSave.cuentaId));
     const prf = cta?.perfiles?.find(p => String(p.id) === String(clientToSave.perfilId));
     setWhatsAppSelection({
       cliente: clientToSave,
       perfil: prf || { nombre: 'Perfil asignado', pin: clientToSave.pin },
-      cuenta: cta
+      cuenta: cta,
+      initialTemplate: 'entrega_cuenta'
     });
     setIsWhatsAppOpen(true);
   };
@@ -212,6 +262,33 @@ export default function App() {
 
       return { ...prev, clientes: updatedClientes };
     });
+
+    // Detectar cuenta y perfil para WhatsApp y verificación de desfase
+    const cta = cuentas.find(c => String(c.id) === String(cli.cuentaId));
+    const prf = cta?.perfiles?.find(p => String(p.id) === String(cli.perfilId));
+    const desfase = verificarDesfase(cta?.fechaCorte, nuevaFechaVencimiento);
+
+    toast.success(
+      `¡Membresía renovada hasta el ${formatearFecha(nuevaFechaVencimiento)}! (+30 días)`,
+      `Renovación: ${cli.nombre}`,
+      {
+        duration: 7000,
+        action: {
+          label: '⭐ Enviar Gracias por Renovar',
+          onClick: () => handleOpenWhatsApp(cli, prf, cta, 'gracias_renovacion')
+        }
+      }
+    );
+
+    if (desfase.tieneDesfase) {
+      setTimeout(() => {
+        toast.warning(
+          `La cuenta maestra vence el ${formatearFecha(cta.fechaCorte)} (${desfase.diasDiferencia} días antes que este cliente). ¡Recuerda renovar la cuenta maestra!`,
+          '⚠️ Atención: Riesgo de Desfase',
+          { duration: 8000 }
+        );
+      }, 400);
+    }
   };
 
   // 2.1. Abrir Modal de Edición de Cliente
@@ -269,6 +346,7 @@ export default function App() {
 
       return { ...prev, cuentas: updatedCuentas, clientes: updatedClientes };
     });
+    toast.success('Cliente actualizado correctamente', 'Cambios Guardados');
   };
 
   // 3. Abrir Modal para dar de baja a un cliente
@@ -302,6 +380,8 @@ export default function App() {
       const updatedClientes = prev.clientes.filter(c => String(c.id) !== String(clienteId));
       return { ...prev, cuentas: updatedCuentas, clientes: updatedClientes };
     });
+
+    toast.info('Cliente dado de baja y pantalla liberada', 'Baja Registrada');
   };
 
   // 4. Guardar Nueva Cuenta Completa
@@ -320,6 +400,8 @@ export default function App() {
       ...prev,
       cuentas: [cuentaToSave, ...prev.cuentas]
     }));
+
+    toast.success(`¡Cuenta maestra ${cuentaToSave.plataforma} registrada con éxito!`, 'Cuenta Creada');
   };
 
   // 4.1. Abrir Modal de Edición de Cuenta Maestra
@@ -344,19 +426,29 @@ export default function App() {
       );
       return { ...prev, cuentas: updatedCuentas };
     });
+
+    toast.success('Cuenta maestra actualizada con éxito');
   };
 
   // 4.3. Renovar Cuenta Maestra (+30 Días de corte mensual y descuenta de ganancia)
-  const handleRenewAccount = async (cuentaId) => {
+  const handleRenewAccount = (cuentaId) => {
     const cta = cuentas.find(c => String(c.id) === String(cuentaId));
     if (!cta) return;
     const costoFormateado = Number(cta.costo || 0).toFixed(2);
-    const confirmar = window.confirm(
-      `¿Deseas renovar la cuenta maestra ${cta.plataforma} (${cta.correo}) por 30 días más?\n\n` +
-      `• Se extenderá la fecha de corte 30 días.\n` +
-      `• Se registrará el costo mensual de S/ ${costoFormateado} (se descontará de tu Ganancia Neta).`
-    );
-    if (!confirmar) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: '¿Renovar Cuenta Maestra?',
+      message: `¿Deseas renovar el corte de ${cta.plataforma} (${cta.correo}) por 30 días más?\n\n• Se extenderá la fecha de corte 30 días.\n• Se registrará el costo mensual de S/ ${costoFormateado} (descontado de tu Ganancia Neta).`,
+      confirmText: 'Sí, Renovar (+30d)',
+      variant: 'primary',
+      onConfirm: () => ejecutarRenovacionCuenta(cuentaId)
+    });
+  };
+
+  const ejecutarRenovacionCuenta = async (cuentaId) => {
+    const cta = cuentas.find(c => String(c.id) === String(cuentaId));
+    if (!cta) return;
 
     const hoy = getTodayDate();
     const diasRestantes = calcularDiasRestantes(cta.fechaCorte);
@@ -385,14 +477,26 @@ export default function App() {
       });
       return { ...prev, cuentas: updatedCuentas };
     });
+
+    toast.success(`Cuenta ${cta.plataforma} renovada hasta el ${formatearFecha(nuevaFechaCorte)} (+30 días)`);
   };
 
   // 5. Eliminar Cuenta Completa
-  const handleDeleteAccount = async (cuentaId) => {
-    if (!window.confirm('¿Seguro que deseas eliminar esta cuenta completa? Se liberarán las asignaciones de sus perfiles.')) {
-      return;
-    }
+  const handleDeleteAccount = (cuentaId) => {
+    const cta = cuentas.find(c => String(c.id) === String(cuentaId));
+    if (!cta) return;
 
+    setConfirmModal({
+      isOpen: true,
+      title: '¿Eliminar Cuenta Maestra?',
+      message: `¿Estás seguro de que deseas eliminar la cuenta ${cta.plataforma} (${cta.correo})?\n\nSe eliminarán también las asignaciones de sus ${cta.cantidadPerfiles || 5} perfiles.`,
+      confirmText: 'Sí, Eliminar Cuenta',
+      variant: 'danger',
+      onConfirm: () => ejecutarEliminacionCuenta(cuentaId)
+    });
+  };
+
+  const ejecutarEliminacionCuenta = async (cuentaId) => {
     if (isCloudConnected) {
       try {
         await eliminarCuentaEnSupabase(cuentaId);
@@ -410,12 +514,20 @@ export default function App() {
 
       return { ...prev, cuentas: updatedCuentas, clientes: updatedClientes };
     });
+
+    toast.info('Cuenta maestra y perfiles eliminados');
   };
 
   // 6. Abrir Modal de WhatsApp para un cliente
-  const handleOpenWhatsApp = (cliente, perfil, cuenta) => {
-    setWhatsAppSelection({ cliente, perfil, cuenta });
+  const handleOpenWhatsApp = (cliente, perfil, cuenta, initialTemplate = null) => {
+    setWhatsAppSelection({ cliente, perfil, cuenta, initialTemplate });
     setIsWhatsAppOpen(true);
+  };
+
+  // 6.1. Abrir Modal de Comprobante / Recibo Digital
+  const handleOpenReceipt = (cliente, perfil, cuenta) => {
+    setReceiptSelection({ cliente, perfil, cuenta });
+    setIsReceiptOpen(true);
   };
 
   // 7. Marcar como "Recordatorio enviado"
@@ -459,132 +571,233 @@ export default function App() {
   };
 
   return (
-    <div className="app-container">
-      {/* 1. Barra de Navegación Principal */}
-      <Navbar 
-        onNewClient={() => { setPreselectedSlot({ cuentaId: null, perfilId: null }); setIsNewClientOpen(true); }}
-        onNewAccount={() => setIsNewAccountOpen(true)}
-        urgentCount={urgentClients.length}
-        onFilterUrgent={() => { setActiveTab('clientes'); setClientFilter('por_vencer'); }}
-      />
-
-      {/* 2. Banner de Alerta Urgente (≤ 2 Días) */}
-      <UrgentAlertBanner 
-        urgentClients={urgentClients}
-        onActionClick={() => { setActiveTab('clientes'); setClientFilter('por_vencer'); }}
-      />
-
-      {/* 3. Métricas y KPIs */}
-      <StatsHeader 
-        clientes={clientes}
-        cuentas={cuentas}
+    <div className={`app-root ${isSidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
+      {/* Barra Lateral Profesional Responsiva */}
+      <Sidebar 
+        activeTab={activeTab}
         onSelectTab={setActiveTab}
-        onSelectFilter={setClientFilter}
+        clientCount={clientes.length}
+        urgentCount={urgentClients.length}
+        accountCount={cuentas.length}
+        desfaseCount={desfaseTotalCount}
+        isCloudConnected={isCloudConnected}
+        onOpenDatabase={() => setIsDatabaseOpen(true)}
+        isInstallable={isInstallable}
+        onInstallPWA={handleInstallPWA}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
       />
 
-      {/* 4. Selector de Pestañas Principales */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div className="view-tabs">
-          <button 
-            className={`tab-btn ${activeTab === 'clientes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('clientes')}
-          >
-            <Users size={18} />
-            <span>Gestión de Clientes ({clientes.length})</span>
-          </button>
+      {/* Área Principal de Contenido */}
+      <div className="main-viewport">
+        <div className="app-container">
+          {/* 1. Barra de Navegación Principal */}
+          <Navbar 
+            onNewClient={() => { setPreselectedSlot({ cuentaId: null, perfilId: null }); setIsNewClientOpen(true); }}
+            onNewAccount={() => setIsNewAccountOpen(true)}
+            urgentCount={urgentClients.length}
+            onFilterUrgent={() => { setActiveTab('clientes'); setClientFilter('por_vencer'); }}
+            onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
+            onGoToCodes={() => setActiveTab('codigos')}
+          />
 
-          <button 
-            className={`tab-btn ${activeTab === 'cuentas' ? 'active' : ''}`}
-            onClick={() => setActiveTab('cuentas')}
-          >
-            <Tv size={18} />
-            <span>Cuentas Maestras y Pantallas ({cuentas.length})</span>
-          </button>
-        </div>
+          {/* 2. Banner de Alerta Urgente (≤ 2 Días) */}
+          <UrgentAlertBanner 
+            urgentClients={urgentClients}
+            onActionClick={() => { setActiveTab('clientes'); setClientFilter('por_vencer'); }}
+          />
 
-        <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-          <span>Duración estándar de membresía: <strong>30 días</strong></span>
+          {/* 3. Métricas y KPIs (visibles en Clientes y Cuentas) */}
+          {(activeTab === 'clientes' || activeTab === 'cuentas') && (
+            <StatsHeader 
+              clientes={clientes}
+              cuentas={cuentas}
+              onSelectTab={setActiveTab}
+              onSelectFilter={setClientFilter}
+            />
+          )}
+
+          {/* 4. Selector de Pestañas Principales */}
+          <div className="tabs-header-container">
+            <div className="view-tabs">
+              <button 
+                className={`tab-btn ${activeTab === 'clientes' ? 'active' : ''}`}
+                onClick={() => setActiveTab('clientes')}
+              >
+                <Users size={17} />
+                <span>Clientes ({clientes.length})</span>
+              </button>
+
+              <button 
+                className={`tab-btn ${activeTab === 'cuentas' ? 'active' : ''}`}
+                onClick={() => setActiveTab('cuentas')}
+              >
+                <Tv size={17} />
+                <span>Cuentas ({cuentas.length})</span>
+              </button>
+
+              <button 
+                className={`tab-btn ${activeTab === 'codigos' ? 'active' : ''}`}
+                onClick={() => setActiveTab('codigos')}
+              >
+                <KeyRound size={17} />
+                <span>Códigos Hogar</span>
+              </button>
+
+              <button 
+                className={`tab-btn ${activeTab === 'portal' ? 'active' : ''}`}
+                onClick={() => setActiveTab('portal')}
+              >
+                <Globe size={17} />
+                <span>Portal Auto-Servicio</span>
+              </button>
+            </div>
+
+            <div className="tabs-duration-hint">
+              <span>Membresía: <strong>30 días</strong></span>
+            </div>
+          </div>
+
+          {/* 5. Vistas de Contenido */}
+          {activeTab === 'clientes' && (
+            <ClientsView 
+              clientes={clientes}
+              cuentas={cuentas}
+              onOpenWhatsApp={handleOpenWhatsApp}
+              onOpenReceipt={handleOpenReceipt}
+              onRenewClient={handleRenewClient}
+              onDeleteClient={handleOpenDeleteClient}
+              onEditClient={handleOpenEditClient}
+              onNewClient={() => { setPreselectedSlot({ cuentaId: null, perfilId: null }); setIsNewClientOpen(true); }}
+              activeFilter={clientFilter}
+              onFilterChange={setClientFilter}
+            />
+          )}
+
+          {activeTab === 'cuentas' && (
+            <AccountsView 
+              cuentas={cuentas}
+              clientes={clientes}
+              onNewAccount={() => setIsNewAccountOpen(true)}
+              onAssignProfile={handleAssignProfileFromAccount}
+              onDeleteAccount={handleDeleteAccount}
+              onRenewAccount={handleRenewAccount}
+              onEditAccount={handleOpenEditAccount}
+              onOpenWhatsApp={handleOpenWhatsApp}
+            />
+          )}
+
+          {activeTab === 'codigos' && (
+            <CodesView 
+              clientes={clientes}
+              cuentas={cuentas}
+            />
+          )}
+
+          {activeTab === 'portal' && (
+            <CustomerPortalView 
+              clientes={clientes}
+              cuentas={cuentas}
+              onOpenReceipt={handleOpenReceipt}
+              onOpenWhatsApp={handleOpenWhatsApp}
+            />
+          )}
+
+          {/* Modales */}
+          <NewClientModal 
+            key={isNewClientOpen ? `client-${preselectedSlot?.cuentaId || 'all'}-${preselectedSlot?.perfilId || 'new'}` : 'client-closed'}
+            isOpen={isNewClientOpen}
+            onClose={() => {
+              setIsNewClientOpen(false);
+              setPreselectedSlot({ cuentaId: null, perfilId: null });
+            }}
+            cuentas={cuentas}
+            onSaveClient={handleSaveClient}
+            preselectedCuentaId={preselectedSlot.cuentaId}
+            preselectedPerfilId={preselectedSlot.perfilId}
+          />
+
+          <EditClientModal 
+            isOpen={isEditClientOpen}
+            onClose={() => setIsEditClientOpen(false)}
+            cliente={clientToEdit}
+            cuentas={cuentas}
+            onUpdateClient={handleUpdateClient}
+          />
+
+          <DeleteClientModal 
+            isOpen={isDeleteClientOpen}
+            onClose={() => setIsDeleteClientOpen(false)}
+            cliente={clientToDelete}
+            cuenta={cuentas.find(c => c.id === clientToDelete?.cuentaId)}
+            perfil={cuentas.find(c => c.id === clientToDelete?.cuentaId)?.perfiles?.find(p => p.id === clientToDelete?.perfilId)}
+            onConfirmDelete={handleConfirmDeleteClient}
+          />
+
+          <NewAccountModal 
+            key={isNewAccountOpen ? 'acct-modal-open' : 'acct-modal-closed'}
+            isOpen={isNewAccountOpen}
+            onClose={() => setIsNewAccountOpen(false)}
+            onSaveAccount={handleSaveAccount}
+          />
+
+          <EditAccountModal 
+            isOpen={isEditAccountOpen}
+            onClose={() => setIsEditAccountOpen(false)}
+            cuenta={accountToEdit}
+            onUpdateAccount={handleUpdateAccount}
+          />
+
+          <WhatsAppModal 
+            isOpen={isWhatsAppOpen}
+            onClose={() => setIsWhatsAppOpen(false)}
+            cliente={whatsAppSelection.cliente}
+            perfil={whatsAppSelection.perfil}
+            cuenta={whatsAppSelection.cuenta}
+            initialTemplate={whatsAppSelection.initialTemplate}
+            onMarkSent={handleMarkWhatsAppSent}
+          />
+
+          {/* Modal de Comprobante / Recibo Digital */}
+          <ReceiptModal
+            isOpen={isReceiptOpen}
+            onClose={() => setIsReceiptOpen(false)}
+            cliente={receiptSelection.cliente}
+            perfil={receiptSelection.perfil}
+            cuenta={receiptSelection.cuenta}
+          />
+
+          {/* Modal de Base de Datos y Respaldo SQL */}
+          <DatabaseModal
+            isOpen={isDatabaseOpen}
+            onClose={() => setIsDatabaseOpen(false)}
+            cuentas={cuentas}
+            clientes={clientes}
+            onImportData={handleImportData}
+            onClearAllData={handleClearAllData}
+          />
+
+          {/* Modal de Confirmación Estilizado */}
+          <ConfirmModal
+            isOpen={confirmModal.isOpen}
+            onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+            onConfirm={confirmModal.onConfirm}
+            title={confirmModal.title}
+            message={confirmModal.message}
+            confirmText={confirmModal.confirmText}
+            variant={confirmModal.variant}
+          />
         </div>
       </div>
 
-      {/* 5. Vistas de Contenido */}
-      {activeTab === 'clientes' ? (
-        <ClientsView 
-          clientes={clientes}
-          cuentas={cuentas}
-          onOpenWhatsApp={handleOpenWhatsApp}
-          onRenewClient={handleRenewClient}
-          onDeleteClient={handleOpenDeleteClient}
-          onEditClient={handleOpenEditClient}
-          onNewClient={() => { setPreselectedSlot({ cuentaId: null, perfilId: null }); setIsNewClientOpen(true); }}
-          activeFilter={clientFilter}
-          onFilterChange={setClientFilter}
-        />
-      ) : (
-        <AccountsView 
-          cuentas={cuentas}
-          clientes={clientes}
-          onNewAccount={() => setIsNewAccountOpen(true)}
-          onAssignProfile={handleAssignProfileFromAccount}
-          onDeleteAccount={handleDeleteAccount}
-          onRenewAccount={handleRenewAccount}
-          onEditAccount={handleOpenEditAccount}
-          onOpenWhatsApp={handleOpenWhatsApp}
-        />
-      )}
-
-      {/* Modales */}
-      <NewClientModal 
-        key={isNewClientOpen ? `client-${preselectedSlot?.cuentaId || 'all'}-${preselectedSlot?.perfilId || 'new'}` : 'client-closed'}
-        isOpen={isNewClientOpen}
-        onClose={() => {
-          setIsNewClientOpen(false);
-          setPreselectedSlot({ cuentaId: null, perfilId: null });
-        }}
-        cuentas={cuentas}
-        onSaveClient={handleSaveClient}
-        preselectedCuentaId={preselectedSlot.cuentaId}
-        preselectedPerfilId={preselectedSlot.perfilId}
-      />
-
-      <EditClientModal 
-        isOpen={isEditClientOpen}
-        onClose={() => setIsEditClientOpen(false)}
-        cliente={clientToEdit}
-        cuentas={cuentas}
-        onUpdateClient={handleUpdateClient}
-      />
-
-      <DeleteClientModal 
-        isOpen={isDeleteClientOpen}
-        onClose={() => setIsDeleteClientOpen(false)}
-        cliente={clientToDelete}
-        cuenta={cuentas.find(c => c.id === clientToDelete?.cuentaId)}
-        perfil={cuentas.find(c => c.id === clientToDelete?.cuentaId)?.perfiles?.find(p => p.id === clientToDelete?.perfilId)}
-        onConfirmDelete={handleConfirmDeleteClient}
-      />
-
-      <NewAccountModal 
-        key={isNewAccountOpen ? 'acct-modal-open' : 'acct-modal-closed'}
-        isOpen={isNewAccountOpen}
-        onClose={() => setIsNewAccountOpen(false)}
-        onSaveAccount={handleSaveAccount}
-      />
-
-      <EditAccountModal 
-        isOpen={isEditAccountOpen}
-        onClose={() => setIsEditAccountOpen(false)}
-        cuenta={accountToEdit}
-        onUpdateAccount={handleUpdateAccount}
-      />
-
-      <WhatsAppModal 
-        isOpen={isWhatsAppOpen}
-        onClose={() => setIsWhatsAppOpen(false)}
-        cliente={whatsAppSelection.cliente}
-        perfil={whatsAppSelection.perfil}
-        cuenta={whatsAppSelection.cuenta}
-        onMarkSent={handleMarkWhatsAppSent}
+      {/* Barra de Navegación Inferior Fija para Móviles (Bottom Bar Táctil) */}
+      <BottomNav 
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        urgentCount={urgentClients.length}
+        desfaseCount={desfaseTotalCount}
       />
     </div>
   );

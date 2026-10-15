@@ -1,6 +1,7 @@
 # Dependencias
 node_modules/
 client/node_modules/
+server/node_modules/
 
 # Producción y compilación
 dist/
@@ -11,6 +12,9 @@ client/dist/
 .env.*
 client/.env
 client/.env.*
+server/.env
+server/.env.*
+server/imap_config.json
 !.env.example
 !client/.env.example
 

@@ -471,3 +471,60 @@ export async function vaciarTodoEnSupabase() {
     throw err;
   }
 }
+
+/**
+ * Carga las plantillas personalizadas de WhatsApp desde Supabase
+ */
+export async function cargarPlantillasDesdeSupabase() {
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('plantillas_whatsapp')
+      .select('*');
+
+    if (error) {
+      console.warn('Tabla plantillas_whatsapp no encontrada en Supabase (usando local):', error.message);
+      return null;
+    }
+
+    if (!data || data.length === 0) return null;
+
+    const plantillas = {};
+    data.forEach(p => {
+      plantillas[p.id || p.tipo] = p.contenido;
+    });
+    return plantillas;
+  } catch (err) {
+    console.warn('No se pudieron cargar plantillas desde Supabase:', err);
+    return null;
+  }
+}
+
+/**
+ * Guarda o actualiza una plantilla de WhatsApp en Supabase
+ */
+export async function guardarPlantillaEnSupabase(tipo, contenido) {
+  if (!supabase) return false;
+
+  try {
+    const { error } = await supabase
+      .from('plantillas_whatsapp')
+      .upsert({
+        id: tipo,
+        tipo: tipo,
+        contenido: contenido,
+        actualizado_en: new Date().toISOString()
+      }, { onConflict: 'id' });
+
+    if (error) {
+      console.warn('No se pudo guardar la plantilla en Supabase:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Error guardando plantilla en Supabase:', err);
+    return false;
+  }
+}
+

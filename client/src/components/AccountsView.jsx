@@ -19,12 +19,14 @@ import {
   ChevronDown,
   ChevronUp,
   Layers,
-  Search
+  Search,
+  AlertTriangle
 } from 'lucide-react';
 import { PLATFORMS } from '../constants/platforms';
-import { formatearFecha, calcularDiasRestantes } from '../utils/storage';
+import { formatearFecha, calcularDiasRestantes, verificarDesfase } from '../utils/storage';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
 import { Pagination } from './Pagination';
+import { useToast } from '../context/ToastContext';
 
 export function AccountsView({
   cuentas = [],
@@ -36,6 +38,7 @@ export function AccountsView({
   onRenewAccount,
   onEditAccount
 }) {
+  const toast = useToast();
   const [showPassword, setShowPassword] = useState({});
   const [copiedItem, setCopiedItem] = useState(null);
   const [expandedAccounts, setExpandedAccounts] = useState({});
@@ -130,6 +133,7 @@ export function AccountsView({
   const handleCopiar = (texto, key) => {
     navigator.clipboard.writeText(texto);
     setCopiedItem(key);
+    toast.success('Dato copiado al portapapeles');
     setTimeout(() => setCopiedItem(null), 2000);
   };
 
@@ -365,6 +369,35 @@ export function AccountsView({
                 </div>
 
                 <div className="account-card-body">
+                  {/* Alerta de Desfase de la Cuenta Maestra */}
+                  {(() => {
+                    const clientesDesfasados = (cta.perfiles || [])
+                      .map(p => clientesPorPerfil[p.id])
+                      .filter(cli => cli && cli.fechaVencimiento && cta.fechaCorte && (cli.fechaVencimiento > cta.fechaCorte));
+
+                    if (clientesDesfasados.length === 0) return null;
+
+                    return (
+                      <div style={{
+                        background: 'rgba(245, 158, 11, 0.12)',
+                        border: '1px solid rgba(245, 158, 11, 0.45)',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '0.78rem',
+                        color: '#fef08a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '12px'
+                      }}>
+                        <AlertTriangle size={15} style={{ color: '#fbbf24', flexShrink: 0 }} />
+                        <span>
+                          <strong style={{ color: '#fbbf24' }}>Alerta de Corte:</strong> {clientesDesfasados.length} {clientesDesfasados.length === 1 ? 'cliente asignado vence' : 'clientes asignados vencen'} después del corte ({formatearFecha(cta.fechaCorte)}). Renueva esta cuenta maestra a tiempo.
+                        </span>
+                      </div>
+                    );
+                  })()}
+
                   {/* Credenciales de la cuenta */}
                   <div className="credential-box">
                     {/* Correo */}

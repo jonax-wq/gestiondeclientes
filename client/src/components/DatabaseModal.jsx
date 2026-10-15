@@ -14,6 +14,8 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { generarScriptSQL } from '../utils/storage';
+import { useToast } from '../context/ToastContext';
+import { ConfirmModal } from './ConfirmModal';
 
 export function DatabaseModal({ 
   isOpen, 
@@ -23,6 +25,8 @@ export function DatabaseModal({
   onImportData,
   onClearAllData
 }) {
+  const toast = useToast();
+  const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [copiadoJson, setCopiadoJson] = useState(false);
   const [pestaña, setPestaña] = useState('sql'); // 'sql' | 'archivos' | 'backup'
@@ -67,28 +71,22 @@ export function DatabaseModal({
         const parsed = JSON.parse(event.target.result);
         if (parsed.cuentas && parsed.clientes) {
           onImportData(parsed);
-          alert('¡Datos restaurados con éxito!');
+          toast.success('¡Base de datos restaurada con éxito!');
           onClose();
         } else {
-          alert('El archivo no tiene el formato correcto de respaldo.');
+          toast.error('El archivo no tiene el formato correcto de respaldo JSON.');
         }
       } catch (err) {
-        alert('Error al leer el archivo JSON: ' + err.message);
+        toast.error('Error al leer el archivo JSON: ' + err.message);
       }
     };
     reader.readAsText(file);
   };
 
-  const handleLimpiarTodo = () => {
-    const confirmacion = window.confirm(
-      '⚠️ ¿Estás seguro de que deseas vaciar todas las cuentas y clientes?\n\n' +
-      'El sistema quedará completamente en blanco (0 cuentas, 0 clientes) para que registres tus datos reales desde cero.'
-    );
-    if (confirmacion) {
-      if (onClearAllData) onClearAllData();
-      alert('¡Sistema vaciado con éxito! Ahora puedes registrar tus cuentas maestras y clientes reales.');
-      onClose();
-    }
+  const handleConfirmarLimpieza = () => {
+    if (onClearAllData) onClearAllData();
+    toast.success('¡Sistema vaciado con éxito! Ahora puedes registrar tus cuentas y clientes reales.');
+    onClose();
   };
 
   return (
@@ -335,7 +333,7 @@ export function DatabaseModal({
                   <button 
                     type="button" 
                     className="btn btn-secondary" 
-                    onClick={handleLimpiarTodo}
+                    onClick={() => setIsConfirmClearOpen(true)}
                     style={{ 
                       borderColor: 'rgba(239, 68, 68, 0.5)', 
                       color: '#fca5a5',
@@ -357,6 +355,18 @@ export function DatabaseModal({
           </button>
         </div>
       </div>
+
+      {/* Modal de confirmación para vaciar la base de datos */}
+      <ConfirmModal
+        isOpen={isConfirmClearOpen}
+        onClose={() => setIsConfirmClearOpen(false)}
+        onConfirm={handleConfirmarLimpieza}
+        title="¿Vaciar todo el sistema?"
+        message="Esta acción eliminará todas las cuentas y clientes actuales para comenzar de cero con tus datos reales. Esta acción no se puede deshacer a menos que tengas un respaldo JSON."
+        confirmText="Sí, vaciar todo"
+        cancelText="Cancelar"
+        variant="danger"
+      />
     </div>
   );
 }

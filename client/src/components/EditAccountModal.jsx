@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Edit, Tv, Calendar, DollarSign, Layers, PlusCircle, RefreshCw } from 'lucide-react';
 import { PLATFORMS, PLATFORMS_LIST } from '../constants/platforms';
 import { addDays, formatearFecha, getTodayDate } from '../utils/storage';
+import { useToast } from '../context/ToastContext';
 
 export function EditAccountModal({ 
   isOpen, 
@@ -9,6 +10,7 @@ export function EditAccountModal({
   cuenta, 
   onUpdateAccount 
 }) {
+  const toast = useToast();
   const [plataforma, setPlataforma] = useState('Netflix');
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
@@ -48,7 +50,7 @@ export function EditAccountModal({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!correo.trim() || !password.trim()) {
-      alert('Correo y contraseña son obligatorios.');
+      toast.warning('Correo y contraseña son obligatorios.', 'Campos incompletos');
       return;
     }
 

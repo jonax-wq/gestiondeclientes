@@ -252,6 +252,7 @@ export const DEFAULT_TEMPLATES = {
   recordatorio_2dias: `👋 ¡Hola {nombre}! Te saluda tu proveedor de streaming.\n\nTe recordamos que a tu membresía de *{plataforma}* le quedan *{dias}* para finalizar:\n👤 *Perfil:* {perfil}\n🔒 *PIN:* {pin}\n📅 *Fecha de vencimiento:* {fecha}\n\nSi deseas continuar con el servicio y no perder tu acceso ni recomendaciones, por favor responde a este mensaje para renovar tu pantalla. 🍿🎬`,
   vence_hoy: `🚨 ¡Hola {nombre}! Tu cuenta de *{plataforma}* (Perfil: *{perfil}*) vence *HOY* ({fecha}).\n\nPara no quedarte sin servicio esta noche, por favor confírmanos tu pago de renovación a la brevedad. ¡Muchas gracias! ⭐`,
   entrega_cuenta: `🎉 ¡Hola {nombre}! Tu acceso a *{plataforma}* está listo y activo por 30 días:\n\n📧 *Correo:* {correo}\n🔑 *Contraseña:* {password}\n👤 *Perfil asignado:* {perfil}\n🔒 *PIN:* {pin}\n📅 *Válido hasta:* {fecha}\n\n⚠️ *Importante:* No modifiques la contraseña ni los otros perfiles. ¡Que disfrutes tus series y películas!`,
+  gracias_renovacion: `🙌 ¡Muchas gracias por tu renovación, {nombre}! ⭐\n\nTu suscripción a *{plataforma}* ha sido renovada exitosamente por *30 días más*:\n\n👤 *Perfil:* {perfil}\n🔒 *PIN:* {pin}\n📅 *Nueva fecha de vencimiento:* {fecha}\n\nGracias por tu puntualidad y preferencia. ¡Que sigas disfrutando de tu contenido favorito! 🍿🎬`,
   vencido: `⚠️ Hola {nombre}, tu suscripción de *{plataforma}* (Perfil: *{perfil}*) ha vencido.\n\nEl perfil se encuentra pausado. Si deseas reactivarlo hoy mismo, escríbenos para asignarte tu acceso de inmediato. ¡Saludos!`
 };
 
@@ -263,6 +264,19 @@ export function obtenerPlantillasGuardadas() {
     return { ...DEFAULT_TEMPLATES, ...JSON.parse(raw) };
   } catch {
     return { ...DEFAULT_TEMPLATES };
+  }
+}
+
+// Fusiona y actualiza plantillas descargadas desde la nube (Supabase)
+export function actualizarPlantillasGuardadas(nuevasPlantillas) {
+  try {
+    if (!nuevasPlantillas || typeof nuevasPlantillas !== 'object') return;
+    const actuales = obtenerPlantillasGuardadas();
+    const fusionadas = { ...actuales, ...nuevasPlantillas };
+    localStorage.setItem(TEMPLATES_KEY, JSON.stringify(fusionadas));
+    return fusionadas;
+  } catch (err) {
+    console.error('Error actualizando plantillas desde la nube:', err);
   }
 }
 
@@ -390,6 +404,8 @@ export function construirEnlaceWhatsApp(codigoPais, numeroCelular, textoMensaje)
   return `https://wa.me/${telefonoCompleto}?text=${textoCodificado}`;
 }
 
+export const crearEnlaceWhatsApp = construirEnlaceWhatsApp;
+
 // Exportar base de datos a formato SQL para ejecutar directamente
 export function generarScriptSQL(datos) {
   const { cuentas = [], clientes = [] } = datos;
@@ -429,3 +445,310 @@ export function generarScriptSQL(datos) {
 
   return sql;
 }
+
+// Verifica si la fecha de corte de la cuenta maestra vence antes que la fecha de vencimiento del cliente
+export function verificarDesfase(fechaCorteCuenta, fechaVencimientoCliente) {
+  if (!fechaCorteCuenta || !fechaVencimientoCliente) {
+    return { tieneDesfase: false, diasDiferencia: 0 };
+  }
+  const corte = new Date(fechaCorteCuenta + 'T00:00:00');
+  const venc = new Date(fechaVencimientoCliente + 'T00:00:00');
+  const diffTime = corte.getTime() - venc.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  return {
+    tieneDesfase: diffDays < 0,
+    diasDiferencia: Math.abs(diffDays),
+    fechaCorte: fechaCorteCuenta,
+    fechaVencimiento: fechaVencimientoCliente
+  };
+}
+
+// Genera texto de comprobante de membresía oficial para enviar por WhatsApp
+export function generarTextoRecibo(cliente, perfil, cuenta, folio = null) {
+  const folioFinal = folio || ('FS-' + (cliente?.id?.replace(/\D/g, '') || Math.floor(1000 + Math.random() * 9000)));
+  const fechaHoy = formatearFecha(getTodayDate());
+  const fechaVenc = formatearFecha(cliente?.fechaVencimiento);
+  const fechaIni = formatearFecha(cliente?.fechaInicio || getTodayDate());
+  const precio = Number(cliente?.precioCobrado || 0).toFixed(2);
+  const plataforma = cuenta?.plataforma || 'Streaming';
+  const nombreCliente = cliente?.nombre || 'Cliente';
+  const perfilNombre = perfil?.nombre || `Perfil ${perfil?.numero || 1}`;
+  const pin = cliente?.pin || perfil?.pin || 'Sin PIN';
+
+  return `🧾 *COMPROBANTE OFICIAL DE MEMBRESÍA*
+━━━━━━━━━━━━━━━━━━━━━━━━
+🍿 *Proveedor:* Flow Stream Oficial
+📋 *N° de Folio:* #${folioFinal}
+📅 *Fecha de Emisión:* ${fechaHoy}
+👤 *Cliente:* ${nombreCliente}
+📱 *WhatsApp:* ${cliente?.codigoPais || '+51'} ${cliente?.celular || ''}
+━━━━━━━━━━━━━━━━━━━━━━━━
+📺 *Servicio:* *${plataforma.toUpperCase()}*
+👤 *Perfil Asignado:* ${perfilNombre}
+🔒 *PIN de Seguridad:* ${pin}
+🗓️ *Periodo:* ${fechaIni} al *${fechaVenc}*
+💵 *Monto Pagado:* S/ ${precio}
+━━━━━━━━━━━━━━━━━━━━━━━━
+✅ *Estado:* ACTIVO Y GARANTIZADO (30 DÍAS)
+📌 *Reglas de uso:*
+• Uso exclusivo en 1 sola pantalla en simultáneo.
+• Prohibido cambiar contraseñas o alterar otros perfiles.
+• Soporte técnico activo durante todo tu periodo.
+
+⭐ *¡Muchas gracias por tu preferencia!* Disfruta tus películas y series favoritas. 🎬🍿`;
+}
+
+// ====================================================================
+// CENTRO DE CÓDIGOS DE ACCESO (NETFLIX HOGAR & OTP MULTIPLATAFORMA)
+// Optimizado para correos personales (Gmail, Outlook, Yahoo, etc.)
+// ====================================================================
+
+const CODIGOS_STORAGE_KEY = 'streamflow_codigos_v1';
+
+/**
+ * Analiza un texto pegado desde un correo personal de Gmail / Outlook / etc.
+ * Extrae códigos de 4 dígitos (Netflix Hogar), 6 dígitos (OTP Disney/Max), y enlaces de verificación.
+ */
+export function extraerCodigoDeTexto(rawText) {
+  if (!rawText || typeof rawText !== 'string') {
+    return {
+      codigo: '',
+      enlace: '',
+      tipo: 'desconocido',
+      plataformaSugerida: 'Netflix',
+      seguridad: 'normal',
+      detalles: 'Texto vacío'
+    };
+  }
+
+  const text = rawText.trim();
+  const lower = text.toLowerCase();
+
+  // 1. Detección de plataforma
+  let plataformaSugerida = 'Netflix';
+  if (lower.includes('disney') || lower.includes('star+')) {
+    plataformaSugerida = 'Disney+';
+  } else if (lower.includes('max') || lower.includes('hbo')) {
+    plataformaSugerida = 'HBO Max';
+  } else if (lower.includes('prime') || lower.includes('amazon')) {
+    plataformaSugerida = 'Prime Video';
+  } else if (lower.includes('paramount')) {
+    plataformaSugerida = 'Paramount+';
+  } else if (lower.includes('crunchyroll')) {
+    plataformaSugerida = 'Crunchyroll';
+  } else if (lower.includes('spotify')) {
+    plataformaSugerida = 'Spotify';
+  } else if (lower.includes('netflix')) {
+    plataformaSugerida = 'Netflix';
+  }
+
+  // 2. Extraer enlaces relevantes de actualización o confirmación
+  let enlace = '';
+  const urlMatches = text.match(/https?:\/\/[^\s<>"{}|\\^`]+[^\s<>"{}|\\^`.,;:?!)]/gi) || [];
+  for (const url of urlMatches) {
+    const uLower = url.toLowerCase();
+    if (
+      uLower.includes('netflix.com/update-primary-location') ||
+      uLower.includes('netflix.com/youraccount') ||
+      uLower.includes('netflix.com/account') ||
+      uLower.includes('netflix.com/travel') ||
+      uLower.includes('disneyplus.com/begin') ||
+      uLower.includes('max.com/tvsignin') ||
+      uLower.includes('amazon.com/mytv') ||
+      uLower.includes('verify') ||
+      uLower.includes('confirm') ||
+      uLower.includes('token')
+    ) {
+      enlace = url;
+      break;
+    }
+  }
+  if (!enlace && urlMatches.length > 0) {
+    enlace = urlMatches[0];
+  }
+
+  // 3. Extracción de códigos según modo o detección inteligente
+  let codigo = '';
+  let tipo = 'login_code';
+
+  // Detección de patrones específicos
+  const netflixHogarRegex = /(?:c[oó]digo(?: de confirmaci[oó]n| para actualizar| de acceso)?(?:\s+es)?(?:\s*:)?|\bhogar\b[^\d]{1,20})\s*(\d{4})\b/i;
+  const matchNetflix = text.match(netflixHogarRegex);
+
+  const otp6Regex = /(?:c[oó]digo|otp|passcode|one-time code|c[oó]digo de un solo uso|c[oó]digo de 6 d[ií]gitos)[^\d]{1,25}(\d{6})\b/i;
+  const matchOtp6 = text.match(otp6Regex);
+
+  const resetPassRegex = /(?:restablecer|cambiar|reset|recuperar|actualizar)\s+(?:tu\s+)?contrase[ñn]a/i;
+  const isReset = resetPassRegex.test(text);
+
+  const travelRegex = /(?:modo\s+viaje|viajero|viaje|temporal|acceso\s+temporal|travel)/i;
+  const isTravel = travelRegex.test(text);
+
+  if (isReset) {
+    tipo = 'reset_password';
+    if (matchOtp6) codigo = matchOtp6[1];
+    else if (matchNetflix) codigo = matchNetflix[1];
+  } else if (isTravel) {
+    tipo = 'travel_mode';
+    if (matchNetflix) codigo = matchNetflix[1];
+    else if (matchOtp6) codigo = matchOtp6[1];
+  } else if (matchNetflix || lower.includes('hogar') || (enlace && enlace.includes('update-primary-location'))) {
+    tipo = 'update_household';
+    if (matchNetflix) codigo = matchNetflix[1];
+  } else if (matchOtp6) {
+    codigo = matchOtp6[1];
+    tipo = 'otp_6_digits';
+  } else {
+    // Si no coincide con palabras clave, buscar por longitud
+    const soloNumeros = text.replace(/[^0-9]/g, '');
+    if (soloNumeros.length === 4) {
+      codigo = soloNumeros;
+      tipo = 'update_household';
+    } else if (soloNumeros.length === 6) {
+      codigo = soloNumeros;
+      tipo = 'otp_6_digits';
+    } else {
+      const matches4 = text.match(/\b\d{4}\b/g);
+      const matches6 = text.match(/\b\d{6}\b/g);
+
+      if (plataformaSugerida === 'Netflix' && matches4 && matches4.length > 0) {
+        codigo = matches4[0];
+        tipo = 'update_household';
+      } else if (matches6 && matches6.length > 0) {
+        codigo = matches6[0];
+        tipo = 'otp_6_digits';
+      } else if (matches4 && matches4.length > 0) {
+        codigo = matches4[0];
+        tipo = 'login_code';
+      }
+    }
+  }
+
+  if (!codigo && enlace) {
+    tipo = 'enlace_hogar';
+  }
+
+  return {
+    codigo: codigo || '',
+    enlace: enlace || '',
+    tipo,
+    plataformaSugerida,
+    textoOriginal: text
+  };
+}
+
+/**
+ * Cargar historial de códigos recientes guardados
+ */
+export function cargarCodigosRecientes() {
+  try {
+    const raw = localStorage.getItem(CODIGOS_STORAGE_KEY);
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list : [];
+  } catch (err) {
+    console.error('Error cargando códigos recientes:', err);
+    return [];
+  }
+}
+
+/**
+ * Guardar un nuevo código en el historial
+ */
+export function guardarCodigoReciente(item) {
+  try {
+    const actuales = cargarCodigosRecientes();
+    const nuevo = {
+      id: generarId(),
+      fecha: new Date().toISOString(),
+      cuentaId: item.cuentaId || null,
+      plataforma: item.plataforma || 'Netflix',
+      perfilId: item.perfilId || null,
+      perfilNombre: item.perfilNombre || '',
+      clienteId: item.clienteId || null,
+      clienteNombre: item.clienteNombre || 'Cliente',
+      clienteCelular: item.clienteCelular || '',
+      codigoPais: item.codigoPais || '+51',
+      codigo: item.codigo || '',
+      enlace: item.enlace || '',
+      tipo: item.tipo || 'netflix_hogar',
+      notas: item.notas || '',
+      minutosExpiracion: item.minutosExpiracion || 15,
+      usado: false
+    };
+
+    const actualizados = [nuevo, ...actuales.filter(c => c.id !== nuevo.id)].slice(0, 40);
+    localStorage.setItem(CODIGOS_STORAGE_KEY, JSON.stringify(actualizados));
+    return nuevo;
+  } catch (err) {
+    console.error('Error guardando código reciente:', err);
+    return null;
+  }
+}
+
+/**
+ * Eliminar un código del historial
+ */
+export function eliminarCodigoReciente(id) {
+  try {
+    const actuales = cargarCodigosRecientes();
+    const filtrados = actuales.filter(c => c.id !== id);
+    localStorage.setItem(CODIGOS_STORAGE_KEY, JSON.stringify(filtrados));
+    return filtrados;
+  } catch (err) {
+    console.error('Error eliminando código reciente:', err);
+    return [];
+  }
+}
+
+/**
+ * Genera el texto con formato profesional para enviar el código por WhatsApp
+ */
+export function generarTextoWhatsAppCodigo({ codigo, enlace, tipo, plataforma, clienteNombre, pin, perfilNombre }) {
+  const nombre = clienteNombre || 'Estimado cliente';
+  const plat = (plataforma || 'Netflix').toUpperCase();
+  const perf = perfilNombre ? `\n👤 *Perfil:* ${perfilNombre}` : '';
+  const pinText = pin ? `\n🔒 *PIN:* ${pin}` : '';
+
+  let titulo = '📺 *CÓDIGO DE ACCESO TEMPORAL / HOGAR*';
+  if (tipo === 'login_code') {
+    titulo = '🔑 *CÓDIGO DE INICIO DE SESIÓN*';
+  } else if (tipo === 'reset_password') {
+    titulo = '🔒 *RESTABLECER CONTRASEÑA*';
+  } else if (tipo === 'travel_mode') {
+    titulo = '✈️ *MODO VIAJE (ACCESO TEMPORAL)*';
+  } else if (tipo === 'update_household' || tipo === 'netflix_hogar') {
+    titulo = '🏠 *ACTUALIZACIÓN DE HOGAR NETFLIX*';
+  } else if (tipo === 'otp_6_digits' || tipo === 'otp_acceso') {
+    titulo = '🛡️ *CÓDIGO DE 6 DÍGITOS (OTP)*';
+  } else if (tipo === 'enlace_hogar') {
+    titulo = '🔗 *ENLACE DE CONFIRMACIÓN DE HOGAR*';
+  }
+
+  let cuerpoCodigo = '';
+  if (codigo) {
+    cuerpoCodigo = `
+🔑 *TU CÓDIGO ES:*
+👉  *${codigo}*  👈`;
+  }
+
+  let cuerpoEnlace = '';
+  if (enlace) {
+    cuerpoEnlace = `
+🔗 *O confirma directamente con este enlace oficial:*
+${enlace}`;
+  }
+
+  return `${titulo}
+━━━━━━━━━━━━━━━━━━━━━━━━
+Hola *${nombre}*, te enviamos el acceso solicitado para tu cuenta de *${plat}*:${perf}${pinText}
+${cuerpoCodigo}${cuerpoEnlace}
+
+⏱️ *Validez:* Aproximadamente 15 minutos.
+⚠️ *Recomendación:* Ingrésalo de inmediato en tu TV o pantalla para evitar que expire.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+🍿 *Flow Stream* | Soporte y Atención Oficial`;
+}
+
+

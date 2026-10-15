@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, PlusCircle, Tv, Key, Calendar, DollarSign, Layers } from 'lucide-react';
 import { PLATFORMS, PLATFORMS_LIST } from '../constants/platforms';
 import { getTodayDate, addDays, generarId } from '../utils/storage';
+import { useToast } from '../context/ToastContext';
 
 export function NewAccountModal({ isOpen, onClose, onSaveAccount }) {
+  const toast = useToast();
   const [plataforma, setPlataforma] = useState('Netflix');
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
@@ -75,7 +77,7 @@ export function NewAccountModal({ isOpen, onClose, onSaveAccount }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!correo.trim() || !password.trim()) {
-      alert('Por favor completa el correo y la contraseña de la cuenta.');
+      toast.warning('Por favor completa el correo y la contraseña de la cuenta.', 'Campos obligatorios');
       return;
     }
 

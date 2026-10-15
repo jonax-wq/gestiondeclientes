@@ -21,8 +21,10 @@ import {
   guardarPlantillaCustom,
   restaurarPlantillaDefecto
 } from '../utils/storage';
+import { isSupabaseConfigured, guardarPlantillaEnSupabase } from '../utils/supabaseClient';
 import { PLATFORMS } from '../constants/platforms';
 import { WhatsAppIcon, WhatsAppBadgeIcon } from './icons/WhatsAppIcon';
+import { useToast } from '../context/ToastContext';
 
 export function WhatsAppModal({ 
   cliente, 
@@ -30,30 +32,36 @@ export function WhatsAppModal({
   cuenta, 
   isOpen, 
   onClose, 
-  onMarkSent 
+  onMarkSent,
+  initialTemplate = null 
 }) {
-  const [tipoPlantilla, setTipoPlantilla] = useState('recordatorio_2dias');
+  const toast = useToast();
+  const [tipoPlantilla, setTipoPlantilla] = useState(initialTemplate || 'recordatorio_2dias');
   const [mensajeTexto, setMensajeTexto] = useState('');
   const [copiado, setCopiado] = useState(false);
   const [guardadoExitoso, setGuardadoExitoso] = useState(false);
 
-  // Inicializar plantilla según los días restantes
+  // Inicializar plantilla según los días restantes o plantilla inicial especificada
   useEffect(() => {
     if (cliente) {
-      const dias = calcularDiasRestantes(cliente.fechaVencimiento);
-      let plantillaInicial = 'recordatorio_2dias';
-      if (dias === 0) {
-        plantillaInicial = 'vence_hoy';
-      } else if (dias < 0) {
-        plantillaInicial = 'vencido';
-      } else if (dias > 5) {
-        plantillaInicial = 'entrega_cuenta';
+      let plantillaInicial = initialTemplate;
+      if (!plantillaInicial) {
+        const dias = calcularDiasRestantes(cliente.fechaVencimiento);
+        if (dias === 0) {
+          plantillaInicial = 'vence_hoy';
+        } else if (dias < 0) {
+          plantillaInicial = 'vencido';
+        } else if (dias > 5) {
+          plantillaInicial = 'entrega_cuenta';
+        } else {
+          plantillaInicial = 'recordatorio_2dias';
+        }
       }
       setTipoPlantilla(plantillaInicial);
       const texto = generarPlantillaWhatsApp(plantillaInicial, cliente, perfil, cuenta);
       setMensajeTexto(texto);
     }
-  }, [cliente, perfil, cuenta]);
+  }, [cliente, perfil, cuenta, initialTemplate]);
 
   if (!isOpen || !cliente) return null;
 
@@ -69,12 +77,17 @@ export function WhatsAppModal({
   const handleCopiarMensaje = () => {
     navigator.clipboard.writeText(mensajeTexto);
     setCopiado(true);
+    toast.success('Mensaje de WhatsApp copiado al portapapeles');
     setTimeout(() => setCopiado(false), 2000);
   };
 
-  const handleGuardarPlantilla = () => {
-    guardarPlantillaCustom(tipoPlantilla, mensajeTexto, cliente, perfil, cuenta);
+  const handleGuardarPlantilla = async () => {
+    const res = guardarPlantillaCustom(tipoPlantilla, mensajeTexto, cliente, perfil, cuenta);
+    if (isSupabaseConfigured && res.plantillaGuardada) {
+      await guardarPlantillaEnSupabase(tipoPlantilla, res.plantillaGuardada);
+    }
     setGuardadoExitoso(true);
+    toast.success('Plantilla personalizada guardada con éxito');
     setTimeout(() => setGuardadoExitoso(false), 3500);
   };
 
@@ -82,10 +95,14 @@ export function WhatsAppModal({
     setMensajeTexto(prev => prev + ` ${tag}`);
   };
 
-  const handleRestaurarDefecto = () => {
-    restaurarPlantillaDefecto(tipoPlantilla);
+  const handleRestaurarDefecto = async () => {
+    const defecto = restaurarPlantillaDefecto(tipoPlantilla);
+    if (isSupabaseConfigured && defecto) {
+      await guardarPlantillaEnSupabase(tipoPlantilla, defecto);
+    }
     const texto = generarPlantillaWhatsApp(tipoPlantilla, cliente, perfil, cuenta);
     setMensajeTexto(texto);
+    toast.info('Plantilla restablecida a su versión original');
   };
 
   const handleEnviarWhatsApp = () => {
@@ -214,6 +231,14 @@ export function WhatsAppModal({
               </button>
               <button 
                 type="button"
+                className={`pill-btn ${tipoPlantilla === 'gracias_renovacion' ? 'active' : ''}`}
+                onClick={() => handleCambiarPlantilla('gracias_renovacion')}
+                style={{ borderColor: tipoPlantilla === 'gracias_renovacion' ? '#fbbf24' : undefined }}
+              >
+                ⭐ Gracias por Renovar
+              </button>
+              <button 
+                type="button"
                 className={`pill-btn ${tipoPlantilla === 'vencido' ? 'active' : ''}`}
                 onClick={() => handleCambiarPlantilla('vencido')}
               >
@@ -325,6 +350,45 @@ export function WhatsAppModal({
                   {v.label}
                 </button>
               ))}
+            </div>
+
+            {/* Barra de acción destacada para guardar plantilla para todos */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '8px',
+              marginTop: '8px',
+              padding: '8px 12px',
+              background: 'rgba(30, 41, 59, 0.6)',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              borderRadius: '8px'
+            }}>
+              <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>
+                ¿Deseas que este texto sea la plantilla fija para todos los clientes?
+              </span>
+              <button
+                type="button"
+                onClick={handleGuardarPlantilla}
+                style={{
+                  background: guardadoExitoso ? '#10b981' : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)'
+                }}
+              >
+                {guardadoExitoso ? <Check size={14} /> : <Save size={14} />}
+                <span>{guardadoExitoso ? '✅ ¡Plantilla Guardada!' : '💾 Guardar para todos'}</span>
+              </button>
             </div>
 
             {guardadoExitoso && (
