@@ -60,10 +60,27 @@
   padding: 0;
 }
 
+/* ====================================================================
+   DESACTIVACIÓN DE TRANSICIONES PARA CAMBIO DE TEMA ULTRA ELEGANTE
+   ==================================================================== */
+.no-transitions,
+.no-transitions *,
+.no-transitions *::before,
+.no-transitions *::after {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -o-transition: none !important;
+  -ms-transition: none !important;
+  transition: none !important;
+  animation-duration: 0s !important;
+  -webkit-animation-duration: 0s !important;
+}
+
 html, body {
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
+  height: 100%;
+  overflow: hidden;
   position: relative;
 }
 
@@ -77,7 +94,7 @@ body {
   background-attachment: fixed;
   color: var(--text-primary);
   line-height: 1.5;
-  min-height: 100vh;
+  height: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -85,7 +102,8 @@ body {
 #root {
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* Tipografía de Encabezados */
@@ -172,12 +190,17 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: -0.03em;
-  background: linear-gradient(to right, #ffffff, #cbd5e1);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   display: flex;
   align-items: center;
   gap: 8px;
+  color: #ffffff;
+}
+
+.brand-title > span:first-child {
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
 }
 
 .brand-badge {
@@ -190,7 +213,49 @@ h1, h2, h3, h4, h5, h6 {
   padding: 2px 7px;
   border-radius: 20px;
   letter-spacing: 0.05em;
-  -webkit-text-fill-color: initial;
+  -webkit-text-fill-color: #a5b4fc;
+}
+
+/* Acciones en Navbar Modo Oscuro */
+.nav-btn-codes {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #34d399 !important;
+  font-weight: 700;
+}
+
+.nav-btn-codes:hover {
+  background: rgba(16, 185, 129, 0.22) !important;
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  color: #6ee7b7 !important;
+  transform: translateY(-1px);
+}
+
+.nav-new-account-btn {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border: 1px solid rgba(6, 182, 212, 0.35) !important;
+  color: #22d3ee !important;
+  font-weight: 700;
+}
+
+.nav-new-account-btn:hover {
+  background: rgba(6, 182, 212, 0.22) !important;
+  border-color: rgba(6, 182, 212, 0.6) !important;
+  color: #67e8f9 !important;
+  transform: translateY(-1px);
+}
+
+.nav-new-client-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4) !important;
+}
+
+.nav-new-client-btn:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.55) !important;
+  transform: translateY(-1px);
 }
 
 .brand-subtitle {
@@ -805,6 +870,29 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0.05em;
 }
 
+/* Botón Circular Directo de WhatsApp en Tabla */
+.btn-whatsapp-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+}
+
+.btn-whatsapp-icon:hover {
+  transform: scale(1.12);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.65);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
 /* Grid de Cuentas Maestras */
 .accounts-grid {
   display: grid;
@@ -932,10 +1020,102 @@ h1, h2, h3, h4, h5, h6 {
   color: #6ee7b7;
 }
 
+.profile-accordion-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.profile-accordion-btn.expanded {
+  background: rgba(99, 102, 241, 0.16);
+  border-color: rgba(99, 102, 241, 0.45);
+  color: #c7d2fe;
+}
+
 .profile-accordion-btn:hover {
-  background: rgba(99, 102, 241, 0.22) !important;
-  border-color: rgba(99, 102, 241, 0.5) !important;
-  color: #ffffff !important;
+  background: rgba(99, 102, 241, 0.22);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #ffffff;
+}
+
+.account-card-header-subtext {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.account-cost-val {
+  font-size: 0.82rem;
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.account-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.account-profiles-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.profile-client-phone-text {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.profile-client-validity-text {
+  color: #94a3b8;
+}
+
+.btn-assign-slot {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 0.72rem;
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.btn-assign-slot:hover {
+  background: rgba(16, 185, 129, 0.2);
+  color: #ffffff;
+}
+
+/* Modal Inner Tabs y Tip Box */
+.modal-inner-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 20px;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.modal-tip-box {
+  background: rgba(99, 102, 241, 0.08);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  font-size: 0.82rem;
+  color: #c7d2fe;
 }
 
 .soles-badge {
@@ -2181,12 +2361,13 @@ h1, h2, h3, h4, h5, h6 {
    ==================================================================== */
 .app-root {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   width: 100%;
   max-width: 100vw;
   position: relative;
   background-color: var(--bg-main);
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .main-viewport {
@@ -2194,10 +2375,38 @@ h1, h2, h3, h4, h5, h6 {
   min-width: 0;
   width: 100%;
   max-width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   transition: all 0.25s ease;
+  overflow-y: auto;
   overflow-x: hidden;
+  position: relative;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar estilizado moderno */
+.main-viewport::-webkit-scrollbar,
+.app-sidebar::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.main-viewport::-webkit-scrollbar-track,
+.app-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.main-viewport::-webkit-scrollbar-thumb,
+.app-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+}
+
+.main-viewport::-webkit-scrollbar-thumb:hover,
+.app-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.4);
 }
 
 /* SIDEBAR */
@@ -2213,10 +2422,12 @@ h1, h2, h3, h4, h5, h6 {
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
   z-index: 100;
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
   overflow-x: hidden;
+  flex-shrink: 0;
 }
 
 .app-sidebar.collapsed {
@@ -2893,6 +3104,285 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 8px;
   padding: 6px 12px;
   margin-top: 6px;
+}
+
+/* ====================================================================
+   NUEVO FLUJO PASO A PASO - EXTRACTOR INTELIGENTE & GMAIL PREVIEW
+   ==================================================================== */
+.step-container-box {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-top: 14px;
+  transition: all 0.2s ease;
+}
+
+.step-container-box:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.step-badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.step-num-pill {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.step-title-heading {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.target-mail-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.target-mail-select-wrapper .select-icon-left {
+  position: absolute;
+  left: 14px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.target-mail-select {
+  padding-left: 42px !important;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.target-account-subinfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Botón Principal Extraer */
+.btn-extraer-principal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 15px 24px;
+  margin-top: 14px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 50%, #ec4899 100%);
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 6px 25px rgba(217, 70, 239, 0.45);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  letter-spacing: 0.02em;
+}
+
+.btn-extraer-principal:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7c3aed 0%, #c026d3 50%, #db2777 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(217, 70, 239, 0.65);
+}
+
+.btn-extraer-principal:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Tarjeta Mensaje de Gmail Encontrado */
+.gmail-message-preview-card {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(234, 67, 53, 0.35);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  text-align: left;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+  margin-top: 10px;
+}
+
+.gmail-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 10px;
+}
+
+.gmail-logo-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #f87171;
+  letter-spacing: 0.02em;
+}
+
+.gmail-time-tag {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.gmail-preview-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.82rem;
+  margin-bottom: 10px;
+}
+
+.gmail-meta-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  word-break: break-all;
+}
+
+.gmail-meta-line .meta-label {
+  font-weight: 700;
+  color: #94a3b8;
+  min-width: 52px;
+  flex-shrink: 0;
+}
+
+.gmail-meta-line .meta-value {
+  color: #e2e8f0;
+}
+
+.gmail-meta-line .meta-value.highlight {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.gmail-preview-body {
+  background: rgba(10, 15, 28, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+  max-height: 160px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.gmail-preview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.gmail-placeholder-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.4;
+  margin-top: 10px;
+}
+
+/* TEMA CLARO (LIGHT THEME) */
+[data-theme="light"] .step-container-box {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .step-container-box:hover {
+  border-color: #6366f1;
+  background: #ffffff;
+}
+
+[data-theme="light"] .target-account-subinfo {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #1e293b;
+}
+
+[data-theme="light"] .gmail-message-preview-card {
+  background: #ffffff;
+  border-color: #fca5a5;
+  box-shadow: 0 4px 18px rgba(234, 67, 53, 0.1);
+}
+
+[data-theme="light"] .gmail-logo-badge {
+  color: #dc2626;
+}
+
+[data-theme="light"] .gmail-time-tag {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+[data-theme="light"] .gmail-meta-line .meta-label {
+  color: #64748b;
+}
+
+[data-theme="light"] .gmail-meta-line .meta-value {
+  color: #0f172a;
+}
+
+[data-theme="light"] .gmail-meta-line .meta-value.highlight {
+  color: #0284c7;
+}
+
+[data-theme="light"] .gmail-preview-body {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #1e293b;
+}
+
+[data-theme="light"] .gmail-placeholder-box {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+
+[data-theme="light"] .btn-extraer-principal {
+  background: linear-gradient(135deg, #7c3aed 0%, #c026d3 50%, #db2777 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(192, 38, 211, 0.4);
 }
 
 /* Historial de Códigos Recientes */
@@ -3572,6 +4062,29 @@ h1, h2, h3, h4, h5, h6 {
    RESPONSIVIDAD MÓVIL Y TABLET (SIDEBAR DRAWER, CODES, PORTAL, MODALES)
    ==================================================================== */
 @media (max-width: 900px) {
+  html, body, #root {
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .app-root {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: visible;
+    flex-direction: column;
+  }
+
+  .main-viewport {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: visible;
+    overflow-x: hidden;
+    padding-bottom: 75px;
+  }
+
   /* SIDEBAR COMO DRAWER LATERAL SUAVE */
   .app-sidebar {
     position: fixed;
@@ -3841,6 +4354,1501 @@ h1, h2, h3, h4, h5, h6 {
   cursor: not-allowed;
 }
 
+/* ====================================================================
+   SISTEMA DE TEMA CLARO (LIGHT THEME) - PALETA VIBRANTE & ENCENDIDA
+   ==================================================================== */
+[data-theme="light"] {
+  /* Fondo y Superficies Luminosas */
+  --bg-main: #f4f6fc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-modal: #ffffff;
+  --bg-input: #ffffff;
 
+  /* Bordes Más Marcados */
+  --border-subtle: #cbd5e1;
+  --border-glow: rgba(99, 102, 241, 0.35);
+  --border-focus: #4f46e5;
 
+  /* Tipografía de Máximo Contraste */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-light: #0f172a;
+
+  /* Acentos Súper Encendidos y Saturados */
+  --accent-primary: #4f46e5;
+  --accent-primary-hover: #4338ca;
+  --accent-cyan: #0284c7;
+  --accent-emerald: #059669;
+  --accent-amber: #d97706;
+  --accent-rose: #e11d48;
+  --accent-purple: #9333ea;
+
+  /* WhatsApp Oficial */
+  --whatsapp-color: #16a34a;
+  --whatsapp-hover: #15803d;
+  --whatsapp-bg: rgba(22, 163, 74, 0.12);
+  --whatsapp-border: #16a34a;
+  --whatsapp-glow: 0 0 16px rgba(22, 163, 74, 0.3);
+
+  /* Sombras Profundas y Contrastadas */
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 6px 16px -2px rgba(0, 0, 0, 0.08), 0 3px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.10), 0 4px 8px -4px rgba(0, 0, 0, 0.05);
+  --shadow-glow: 0 0 25px rgba(99, 102, 241, 0.25);
+}
+
+[data-theme="light"] body {
+  background-color: #f4f6fc;
+  background-image: 
+    radial-gradient(circle at 10% 8%, rgba(99, 102, 241, 0.14) 0%, transparent 45%),
+    radial-gradient(circle at 90% 12%, rgba(6, 182, 212, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(139, 92, 246, 0.10) 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.10) 0%, transparent 45%);
+  color: #0f172a;
+}
+
+/* Scrollbar en Modo Claro */
+[data-theme="light"] .main-viewport::-webkit-scrollbar-thumb,
+[data-theme="light"] .app-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .main-viewport::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] .app-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #6366f1;
+}
+
+/* ====================================================================
+   NAVBAR (BARRA DE NAVEGACIÓN SUPERIOR) EN MODO CLARO
+   ==================================================================== */
+[data-theme="light"] .navbar {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08);
+}
+
+/* Marca "Flow Stream": Ultra visible y nítido */
+[data-theme="light"] .brand-title,
+[data-theme="light"] .sidebar-app-name {
+  color: #1e1b4b !important;
+  font-weight: 900 !important;
+}
+
+[data-theme="light"] .brand-title > span:first-child,
+[data-theme="light"] .sidebar-app-name > span:first-child {
+  background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 60%, #6366f1 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: #1e1b4b !important;
+  font-weight: 900 !important;
+  display: inline-block;
+}
+
+[data-theme="light"] .brand-badge,
+[data-theme="light"] .brand-badge-mini {
+  background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 900 !important;
+  border: none !important;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.45) !important;
+}
+
+[data-theme="light"] .brand-subtitle {
+  color: #475569;
+  font-weight: 600;
+}
+
+/* Botones y Elementos de Navbar en Modo Claro */
+[data-theme="light"] .brand-logo-img {
+  border: 1.5px solid rgba(79, 70, 229, 0.35) !important;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2) !important;
+}
+
+[data-theme="light"] .navbar-mobile-toggle-btn {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .navbar-mobile-toggle-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+}
+
+[data-theme="light"] .nav-urgent-btn {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 40%, #fde68a 100%) !important;
+  border: 2px solid #f59e0b !important;
+  color: #92400e !important;
+  font-weight: 900 !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35) !important;
+}
+
+[data-theme="light"] .nav-urgent-btn svg {
+  color: #d97706 !important;
+}
+
+[data-theme="light"] .nav-btn-codes {
+  background: #ffffff !important;
+  border: 1.5px solid #10b981 !important;
+  color: #047857 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15) !important;
+}
+
+[data-theme="light"] .nav-btn-codes:hover {
+  background: #ecfdf5 !important;
+  border-color: #059669 !important;
+}
+
+[data-theme="light"] .nav-new-account-btn {
+  background: #ffffff !important;
+  border: 1.5px solid #06b6d4 !important;
+  color: #0891b2 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.15) !important;
+}
+
+[data-theme="light"] .nav-new-account-btn:hover {
+  background: #ecfeff !important;
+  border-color: #0284c7 !important;
+}
+
+[data-theme="light"] .nav-new-client-btn {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.45) !important;
+}
+
+[data-theme="light"] .nav-new-client-btn:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%) !important;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+/* ====================================================================
+   BANNER DE ALERTAS URGENTES (DORADO / AMBER VIBRANTE)
+   ==================================================================== */
+[data-theme="light"] .urgent-banner {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 40%, #fde68a 100%) !important;
+  border: 2.5px solid #f59e0b !important;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.25) !important;
+}
+
+[data-theme="light"] .urgent-icon-box {
+  background: #f59e0b !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.45) !important;
+}
+
+[data-theme="light"] .urgent-title {
+  color: #78350f !important;
+  font-weight: 900 !important;
+  font-size: 1.05rem !important;
+}
+
+[data-theme="light"] .urgent-desc {
+  color: #92400e !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .urgent-action-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: none !important;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.5) !important;
+}
+
+[data-theme="light"] .urgent-action-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  box-shadow: 0 6px 22px rgba(16, 185, 129, 0.65) !important;
+  transform: translateY(-2px);
+}
+
+/* ====================================================================
+   TARJETAS DE MÉTRICAS (KPIs) - SÚPER ENCENDIDAS Y VIBRANTES
+   ==================================================================== */
+[data-theme="light"] .stat-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  transition: all 0.25s ease;
+}
+
+/* Acentos vivos superiores en cada tarjeta */
+[data-theme="light"] .stat-card:nth-child(1)::before {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+[data-theme="light"] .stat-card:nth-child(2)::before {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+[data-theme="light"] .stat-card:nth-child(3)::before {
+  background: linear-gradient(90deg, #f43f5e, #e11d48);
+}
+[data-theme="light"] .stat-card:nth-child(4)::before {
+  background: linear-gradient(90deg, #06b6d4, #0284c7);
+}
+[data-theme="light"] .stat-card:nth-child(5)::before {
+  background: linear-gradient(90deg, #6366f1, #10b981);
+}
+
+[data-theme="light"] .stat-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 28px -4px rgba(99, 102, 241, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-4px);
+}
+
+[data-theme="light"] .stat-card.card-urgent {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 40%, #fde68a 100%) !important;
+  border: 2.5px solid #f59e0b !important;
+  box-shadow: 0 6px 25px rgba(245, 158, 11, 0.28) !important;
+}
+
+[data-theme="light"] .stat-card.card-urgent .stat-label {
+  color: #78350f !important;
+  font-weight: 900 !important;
+}
+
+[data-theme="light"] .stat-card.card-urgent .stat-subtext {
+  color: #92400e !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .stat-label {
+  color: #475569;
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+}
+
+[data-theme="light"] .stat-subtext {
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Números y Cifras Vivas Súper Saturadas */
+[data-theme="light"] .stat-val-emerald {
+  color: #047857 !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(4, 120, 87, 0.12);
+}
+
+[data-theme="light"] .stat-val-amber {
+  color: #b45309 !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(180, 83, 9, 0.12);
+}
+
+[data-theme="light"] .stat-val-cyan {
+  color: #0284c7 !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(2, 132, 199, 0.12);
+}
+
+[data-theme="light"] .stat-val-rose {
+  color: #be123c !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(190, 18, 60, 0.12);
+}
+
+[data-theme="light"] .stat-val-indigo {
+  color: #4338ca !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(67, 56, 202, 0.12);
+}
+
+[data-theme="light"] .stat-lbl-amber {
+  color: #92400e !important;
+  font-weight: 900 !important;
+}
+
+/* Iconos de KPIs con Degradados Ricos y Bordes Neón */
+[data-theme="light"] .stat-icon.emerald {
+  background: linear-gradient(135deg, #ecfdf5 0%, #a7f3d0 100%) !important;
+  color: #047857 !important;
+  border: 2px solid #10b981 !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+}
+
+[data-theme="light"] .stat-icon.amber {
+  background: linear-gradient(135deg, #fffbeb 0%, #fde68a 100%) !important;
+  color: #92400e !important;
+  border: 2px solid #f59e0b !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4) !important;
+}
+
+[data-theme="light"] .stat-icon.cyan {
+  background: linear-gradient(135deg, #ecfeff 0%, #a5f3fc 100%) !important;
+  color: #0e7490 !important;
+  border: 2px solid #06b6d4 !important;
+  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.35) !important;
+}
+
+[data-theme="light"] .stat-icon.rose {
+  background: linear-gradient(135deg, #fff1f2 0%, #fecdd3 100%) !important;
+  color: #be123c !important;
+  border: 2px solid #f43f5e !important;
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.35) !important;
+}
+
+[data-theme="light"] .stat-icon.indigo {
+  background: linear-gradient(135deg, #eef2ff 0%, #c7d2fe 100%) !important;
+  color: #4338ca !important;
+  border: 2px solid #6366f1 !important;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35) !important;
+}
+
+/* ====================================================================
+   PESTAÑAS DE NAVEGACIÓN (TABS)
+   ==================================================================== */
+[data-theme="light"] .view-tabs {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  padding: 5px;
+  border-radius: 14px;
+}
+
+[data-theme="light"] .tab-btn {
+  color: #334155;
+  font-weight: 700;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .tab-btn:hover {
+  color: #4338ca;
+  background: #eef2ff;
+}
+
+[data-theme="light"] .tab-btn.active {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.45) !important;
+}
+
+[data-theme="light"] .tabs-duration-hint {
+  color: #475569;
+  font-weight: 600;
+}
+
+/* ====================================================================
+   TARJETA CONTENEDORA & BARRA DE FILTROS (PILLS)
+   ==================================================================== */
+[data-theme="light"] .content-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .search-input {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .search-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+/* Filtros Pills con Colores Encendidos y Vivos */
+[data-theme="light"] .pill-btn {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .pill-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+/* Pill Todos */
+[data-theme="light"] .pill-btn.pill-todos.active {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  border: 2px solid #4338ca !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.45) !important;
+}
+
+/* Pill Por Vencer (≤ 2 Días) */
+[data-theme="light"] .pill-btn.pill-urgent {
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  color: #b45309;
+}
+[data-theme="light"] .pill-btn.pill-urgent .counter-badge {
+  background: #f59e0b;
+  color: #ffffff;
+  font-weight: 900;
+}
+[data-theme="light"] .pill-btn.pill-urgent.active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  border: 2px solid #b45309 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5) !important;
+}
+
+/* Pill Activos */
+[data-theme="light"] .pill-btn.pill-activos {
+  background: #ecfdf5;
+  border: 1.5px solid #10b981;
+  color: #047857;
+}
+[data-theme="light"] .pill-btn.pill-activos .counter-badge {
+  background: #10b981;
+  color: #ffffff;
+  font-weight: 900;
+}
+[data-theme="light"] .pill-btn.pill-activos.active {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: 2px solid #047857 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.45) !important;
+}
+
+/* Pill Vencidos */
+[data-theme="light"] .pill-btn.pill-vencidos {
+  background: #fff1f2;
+  border: 1.5px solid #f43f5e;
+  color: #be123c;
+}
+[data-theme="light"] .pill-btn.pill-vencidos .counter-badge {
+  background: #f43f5e;
+  color: #ffffff;
+  font-weight: 900;
+}
+[data-theme="light"] .pill-btn.pill-vencidos.active {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+  border: 2px solid #be123c !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(244, 63, 94, 0.45) !important;
+}
+
+/* Pill Riesgo Desfase */
+[data-theme="light"] .pill-btn.pill-desfase {
+  background: #fff7ed;
+  border: 1.5px solid #f97316;
+  color: #c2410c;
+}
+[data-theme="light"] .pill-btn.pill-desfase .counter-badge {
+  background: #f97316;
+  color: #ffffff;
+  font-weight: 900;
+}
+[data-theme="light"] .pill-btn.pill-desfase.active {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+  border: 2px solid #c2410c !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.45) !important;
+}
+
+/* Badges de contador dentro de botón activo */
+[data-theme="light"] .pill-btn.active .counter-badge {
+  background: rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .counter-badge {
+  background: rgba(0, 0, 0, 0.09);
+  color: inherit;
+  font-weight: 800;
+}
+
+/* ====================================================================
+   SIDEBAR (BARRA LATERAL) EN MODO CLARO - ESTILO PROFESIONAL PRO
+   ==================================================================== */
+[data-theme="light"] .app-sidebar {
+  background: #ffffff;
+  border-right: 1.5px solid #e2e8f0;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .sidebar-header {
+  border-bottom: 1.5px solid #e2e8f0;
+}
+
+[data-theme="light"] .sidebar-app-role {
+  color: #64748b;
+  font-weight: 600;
+}
+
+[data-theme="light"] .sidebar-section-title {
+  color: #64748b;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+/* Botones de Navegación del Sidebar */
+[data-theme="light"] .sidebar-nav-btn {
+  color: #334155;
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .sidebar-nav-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  transform: translateX(3px);
+}
+
+/* Botón Activo del Sidebar: Royal Indigo Vibrante */
+[data-theme="light"] .sidebar-nav-btn.active {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+  border: 2px solid #3730a3 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 18px rgba(79, 70, 229, 0.4) !important;
+}
+
+[data-theme="light"] .sidebar-nav-btn.active .sidebar-nav-label,
+[data-theme="light"] .sidebar-nav-btn.active .sidebar-nav-desc,
+[data-theme="light"] .sidebar-nav-btn.active .sidebar-nav-icon-wrapper {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .sidebar-nav-label {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+[data-theme="light"] .sidebar-nav-desc {
+  color: #64748b;
+}
+
+/* Badges del Sidebar: Colores Sólidos Vivos */
+[data-theme="light"] .sidebar-badge.count {
+  background: #e0e7ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+  font-weight: 800;
+}
+
+[data-theme="light"] .sidebar-badge.urgent {
+  background: #f59e0b !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 900 !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.45) !important;
+}
+
+[data-theme="light"] .sidebar-badge.warning {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 900 !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.45) !important;
+}
+
+[data-theme="light"] .sidebar-badge.badge-codigos {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 900 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4) !important;
+}
+
+[data-theme="light"] .sidebar-badge.badge-portal {
+  background: #8b5cf6 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 900 !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4) !important;
+}
+
+/* Tarjeta Rápida (Netflix Hogar & OTP Extractor) */
+[data-theme="light"] .sidebar-quick-card {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+  border: 2px solid #10b981 !important;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.2) !important;
+}
+
+[data-theme="light"] .quick-card-header {
+  color: #065f46;
+  font-weight: 800;
+}
+
+[data-theme="light"] .quick-card-text {
+  color: #064e3b;
+  font-weight: 600;
+}
+
+[data-theme="light"] .quick-card-btn {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: none !important;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.45) !important;
+}
+
+[data-theme="light"] .quick-card-btn:hover {
+  background: #059669 !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+/* Pie del Sidebar */
+[data-theme="light"] .sidebar-footer {
+  border-top: 1.5px solid #e2e8f0;
+}
+
+[data-theme="light"] .sidebar-footer-action {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  color: #334155;
+  font-weight: 700;
+}
+
+[data-theme="light"] .sidebar-footer-action:hover {
+  background: #eef2ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
+}
+
+[data-theme="light"] .db-action-title,
+[data-theme="light"] .theme-action-title {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+[data-theme="light"] .db-action-sub,
+[data-theme="light"] .theme-action-sub {
+  color: #64748b;
+}
+
+/* ====================================================================
+   TABLA DE CLIENTES & BADGES CON CONTRASTE ELEVADO Y COLORES VIBRANTES
+   ==================================================================== */
+[data-theme="light"] .table-responsive {
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .custom-table th {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  letter-spacing: 0.08em !important;
+}
+
+[data-theme="light"] .custom-table td {
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .custom-table tr:hover td {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .custom-table tr.row-urgent td {
+  background: rgba(245, 158, 11, 0.10) !important;
+}
+
+[data-theme="light"] .custom-table tr.row-expired td {
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+
+/* Badges de Vencimiento Súper Vivos */
+[data-theme="light"] .expiry-tag.active {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border: 2px solid #22c55e !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25) !important;
+}
+
+[data-theme="light"] .expiry-tag.urgent-2 {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: 2px solid #f59e0b !important;
+  font-weight: 900 !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4) !important;
+}
+
+[data-theme="light"] .expiry-tag.urgent-today {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border: 2px solid #ef4444 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4) !important;
+}
+
+[data-theme="light"] .expiry-tag.expired {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 2px solid #94a3b8 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .pin-badge {
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1.5px solid #cbd5e1;
+  font-weight: 800;
+}
+
+/* Plataforma Pills en Modo Claro - Colores Oficiales Encendidos */
+[data-theme="light"] .platform-pill {
+  font-weight: 800 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  border-width: 1.5px !important;
+}
+
+[data-theme="light"] .platform-pill[data-platform="Netflix"] {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border-color: #ef4444 !important;
+}
+
+[data-theme="light"] .platform-pill[data-platform="Disney+"] {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border-color: #0284c7 !important;
+}
+
+[data-theme="light"] .platform-pill[data-platform="HBO Max"],
+[data-theme="light"] .platform-pill[data-platform="Max"] {
+  background: #ede9fe !important;
+  color: #4338ca !important;
+  border-color: #6366f1 !important;
+}
+
+[data-theme="light"] .platform-pill[data-platform="Prime Video"] {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="light"] .platform-pill[data-platform="Spotify"] {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border-color: #22c55e !important;
+}
+
+[data-theme="light"] .platform-pill[data-platform="Paramount+"] {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="light"] .platform-pill[data-platform="Crunchyroll"] {
+  background: #ffedd5 !important;
+  color: #c2410c !important;
+  border-color: #f97316 !important;
+}
+
+[data-theme="light"] .platform-pill[data-platform="Apple TV+"] {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #64748b !important;
+}
+
+[data-theme="light"] .platform-pill[data-platform="YouTube Premium"] {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border-color: #ef4444 !important;
+}
+
+[data-theme="light"] .platform-pill[data-platform="Otro"] {
+  background: #f3e8ff !important;
+  color: #7e22ce !important;
+  border-color: #a855f7 !important;
+}
+
+/* Tag de Desfase en Modo Claro */
+[data-theme="light"] .desfase-tag {
+  background: #fff7ed !important;
+  color: #c2410c !important;
+  border: 1.5px solid #f97316 !important;
+  font-weight: 800 !important;
+}
+
+/* Botón Circular Directo de WhatsApp en Modo Claro */
+[data-theme="light"] .btn-whatsapp-icon {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.45) !important;
+}
+
+[data-theme="light"] .btn-whatsapp-icon:hover {
+  background: linear-gradient(135deg, #15803d 0%, #166534 100%) !important;
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.65) !important;
+  transform: scale(1.12);
+}
+
+/* Botones de Acción en Fila */
+[data-theme="light"] .btn-icon-action {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .btn-icon-action.receipt:hover {
+  background: #eef2ff;
+  border-color: #6366f1;
+  color: #4338ca;
+}
+
+[data-theme="light"] .btn-icon-action.edit:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+[data-theme="light"] .btn-icon-action.renew:hover {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #047857;
+}
+
+[data-theme="light"] .btn-icon-action.delete:hover {
+  background: #fff1f2;
+  border-color: #f43f5e;
+  color: #be123c;
+}
+
+/* ====================================================================
+   CUENTAS MAESTRAS GRID EN MODO CLARO
+   ==================================================================== */
+/* ====================================================================
+   CUENTAS MAESTRAS EN MODO CLARO
+   ==================================================================== */
+[data-theme="light"] .account-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .account-card:hover {
+  border-color: #6366f1;
+  box-shadow: 0 8px 26px rgba(99, 102, 241, 0.12);
+}
+
+[data-theme="light"] .account-card-header-subtext {
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .credential-box {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+}
+
+[data-theme="light"] .cred-row {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .cred-label {
+  color: #334155;
+  font-weight: 700;
+}
+
+[data-theme="light"] .cred-val {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+[data-theme="light"] .account-cost-val {
+  color: #0284c7 !important;
+  font-weight: 800;
+}
+
+[data-theme="light"] .profile-accordion-btn {
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+[data-theme="light"] .profile-accordion-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+[data-theme="light"] .profile-accordion-btn.expanded {
+  background: #eef2ff;
+  border-color: #6366f1;
+  color: #4338ca;
+}
+
+[data-theme="light"] .account-progress-track {
+  background: #e2e8f0;
+}
+
+[data-theme="light"] .account-profiles-label {
+  color: #1e293b;
+  font-weight: 800;
+}
+
+[data-theme="light"] .profile-slot {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .profile-slot.assigned {
+  background: #f8faff;
+  border: 2px solid #818cf8;
+  box-shadow: 0 3px 10px rgba(99, 102, 241, 0.1);
+}
+
+[data-theme="light"] .profile-slot.available {
+  background: #f0fdf4;
+  border: 2px solid #34d399;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.1);
+}
+
+[data-theme="light"] .profile-num {
+  color: #64748b;
+  font-weight: 800;
+}
+
+[data-theme="light"] .profile-title {
+  color: #0f172a !important;
+  font-weight: 800;
+}
+
+[data-theme="light"] .profile-client-name {
+  color: #1e40af !important;
+  font-weight: 800;
+}
+
+[data-theme="light"] .profile-client-phone-text {
+  color: #475569;
+  font-weight: 600;
+}
+
+[data-theme="light"] .profile-client-validity-text {
+  color: #059669;
+  font-weight: 700;
+}
+
+[data-theme="light"] .profile-status-badge.assigned {
+  background: #e0e7ff;
+  color: #4338ca;
+  font-weight: 800;
+}
+
+[data-theme="light"] .profile-status-badge.available {
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 800;
+}
+
+[data-theme="light"] .btn-assign-slot {
+  background: #ecfdf5 !important;
+  border: 1.5px solid #10b981 !important;
+  color: #047857 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .btn-assign-slot:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+}
+
+/* ====================================================================
+   MODALES EN MODO CLARO
+   ==================================================================== */
+[data-theme="light"] .modal-overlay {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(10px);
+}
+
+[data-theme="light"] .modal-dialog {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] .modal-header {
+  background: #ffffff !important;
+  border-bottom: 1.5px solid #e2e8f0;
+}
+
+[data-theme="light"] .modal-title {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+[data-theme="light"] .modal-close-btn {
+  color: #475569;
+}
+
+[data-theme="light"] .modal-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+[data-theme="light"] .modal-footer {
+  border-top: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+[data-theme="light"] .form-label {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+[data-theme="light"] .form-input,
+[data-theme="light"] .form-select,
+[data-theme="light"] .form-textarea {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .form-input:focus,
+[data-theme="light"] .form-select:focus,
+[data-theme="light"] .form-textarea:focus {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2) !important;
+}
+
+/* ====================================================================
+   CENTRO DE CÓDIGOS (CODES VIEW) EN MODO CLARO
+   ==================================================================== */
+/* ====================================================================
+   CENTRO DE CÓDIGOS (CODES VIEW) EN MODO CLARO
+   ==================================================================== */
+[data-theme="light"] .codes-header-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .codes-title {
+  color: #0f172a;
+  font-weight: 900;
+}
+
+[data-theme="light"] .codes-subtitle {
+  color: #475569;
+  font-weight: 600;
+}
+
+[data-theme="light"] .codes-badge-mode {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #15803d;
+  font-weight: 800;
+}
+
+[data-theme="light"] .codes-imap-status-bar {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  color: #1e293b;
+}
+
+[data-theme="light"] .imap-status-indicator {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+[data-theme="light"] .codes-extractor-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .streaming-code-selector-wrapper {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+}
+
+[data-theme="light"] .streaming-code-selector-label {
+  color: #6b21a8 !important;
+  font-weight: 800;
+}
+
+[data-theme="light"] .code-type-option-btn {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #1e293b;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .code-type-option-btn:hover {
+  background: #f5f3ff;
+  border-color: #a855f7;
+  color: #6b21a8;
+}
+
+[data-theme="light"] .code-type-option-btn.active {
+  background: #f3e8ff;
+  border: 2px solid #9333ea;
+  color: #581c87;
+  font-weight: 800;
+  box-shadow: 0 2px 12px rgba(147, 51, 234, 0.2);
+}
+
+[data-theme="light"] .code-type-option-btn .code-type-icon {
+  color: #64748b;
+}
+
+[data-theme="light"] .code-type-option-btn.active .code-type-icon {
+  color: #9333ea;
+}
+
+[data-theme="light"] .btn-obtener-codigo {
+  background: linear-gradient(135deg, #7e22ce 0%, #9333ea 50%, #7c3aed 100%);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 16px rgba(147, 51, 234, 0.35);
+}
+
+[data-theme="light"] .codes-textarea {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+[data-theme="light"] .codes-client-summary-box {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+}
+
+[data-theme="light"] .codes-client-summary-box span {
+  color: #1e293b;
+}
+
+[data-theme="light"] .codes-manual-row {
+  border-top: 1.5px dashed #cbd5e1;
+}
+
+[data-theme="light"] .codes-manual-row span {
+  color: #475569;
+  font-weight: 600;
+}
+
+[data-theme="light"] .codes-manual-input {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #047857;
+  font-weight: 800;
+}
+
+[data-theme="light"] .codes-result-card {
+  background: #ffffff;
+  border: 2px solid #818cf8;
+  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.12);
+}
+
+[data-theme="light"] .result-tag {
+  background: #eef2ff;
+  border: 1.5px solid #c7d2fe;
+  color: #4338ca;
+  font-weight: 800;
+}
+
+[data-theme="light"] .code-text-neon {
+  color: #059669;
+  text-shadow: none;
+  font-weight: 900;
+}
+
+[data-theme="light"] .code-text-placeholder {
+  color: #cbd5e1;
+  opacity: 1;
+}
+
+[data-theme="light"] .result-helper-text {
+  color: #475569;
+  font-weight: 600;
+}
+
+[data-theme="light"] .detected-link-box {
+  background: #f0fdfa;
+  border: 1.5px solid #99f6e4;
+}
+
+[data-theme="light"] .detected-link-url {
+  color: #0f766e;
+  font-weight: 600;
+}
+
+[data-theme="light"] .codes-notice-box {
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  color: #92400e;
+  font-weight: 600;
+}
+
+[data-theme="light"] .codes-history-section {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .history-header-row {
+  border-bottom: 1.5px solid #e2e8f0;
+}
+
+[data-theme="light"] .history-title {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+[data-theme="light"] .history-subtitle {
+  color: #475569;
+}
+
+[data-theme="light"] .search-bar-mini {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+}
+
+[data-theme="light"] .search-bar-mini input {
+  color: #0f172a;
+}
+
+[data-theme="light"] .history-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .history-card:hover {
+  border-color: #6366f1;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.12);
+}
+
+[data-theme="light"] .history-platform-badge {
+  background: #e0e7ff;
+  color: #4338ca;
+  font-weight: 800;
+}
+
+[data-theme="light"] .history-time-badge {
+  color: #64748b;
+}
+
+[data-theme="light"] .history-code-val {
+  color: #059669;
+  font-weight: 900;
+}
+
+[data-theme="light"] .history-client-name {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+[data-theme="light"] .history-client-details span {
+  color: #475569;
+}
+
+[data-theme="light"] .history-card-actions {
+  border-top: 1.5px solid #f1f5f9;
+}
+
+[data-theme="light"] .history-btn.copy {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+[data-theme="light"] .history-btn.copy:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+[data-theme="light"] .history-btn.whatsapp {
+  background: #ecfdf5;
+  border: 1.5px solid #10b981;
+  color: #047857;
+  font-weight: 800;
+}
+
+[data-theme="light"] .history-btn.whatsapp:hover {
+  background: #10b981;
+  color: #ffffff;
+}
+
+[data-theme="light"] .history-btn.delete {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .history-btn.delete:hover {
+  color: #e11d48;
+  background: #fff1f2;
+}
+
+[data-theme="light"] .history-empty-state {
+  color: #64748b;
+}
+
+[data-theme="light"] .modal-inner-tabs {
+  background: #f8fafc;
+  border-bottom: 1.5px solid #e2e8f0;
+}
+
+[data-theme="light"] .modal-tip-box {
+  background: #eef2ff;
+  border: 1.5px solid #c7d2fe;
+  color: #312e81;
+}
+
+/* ====================================================================
+   PORTAL AUTO-SERVICIO DEL CLIENTE
+   ==================================================================== */
+[data-theme="light"] .portal-header-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+  border: 2px solid #c4b5fd;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.12);
+}
+
+[data-theme="light"] .portal-title {
+  color: #0f172a;
+  font-weight: 900;
+}
+
+[data-theme="light"] .portal-subtitle {
+  color: #475569;
+  font-weight: 600;
+}
+
+[data-theme="light"] .portal-search-box {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+}
+
+[data-theme="light"] .portal-match-list {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+}
+
+[data-theme="light"] .membership-vip-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #a855f7;
+  box-shadow: 0 12px 35px rgba(139, 92, 246, 0.15);
+}
+
+[data-theme="light"] .vip-card-header {
+  border-bottom: 1.5px solid #e2e8f0;
+}
+
+[data-theme="light"] .vip-platform-name {
+  color: #0f172a;
+  font-weight: 900;
+}
+
+[data-theme="light"] .vip-value {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+/* ====================================================================
+   PAGINACIÓN
+   ==================================================================== */
+[data-theme="light"] .pagination-container {
+  border-top: 1.5px solid #e2e8f0;
+  color: #475569;
+  font-weight: 600;
+}
+
+[data-theme="light"] .pagination-highlight {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+[data-theme="light"] .pagination-select {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+[data-theme="light"] .pagination-btn {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  font-weight: 700;
+}
+
+[data-theme="light"] .pagination-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+[data-theme="light"] .pagination-btn.active {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  border-color: #6366f1 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+/* ====================================================================
+   VISTA MÓVIL EN MODO CLARO
+   ==================================================================== */
+[data-theme="light"] .mobile-bottom-nav,
+[data-theme="light"] .bottom-nav {
+  background: rgba(255, 255, 255, 0.98);
+  border-top: 1.5px solid #cbd5e1;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .bottom-nav-item {
+  color: #475569;
+  font-weight: 600;
+}
+
+[data-theme="light"] .bottom-nav-item.active {
+  color: #4f46e5;
+  font-weight: 800;
+}
+
+[data-theme="light"] .client-mobile-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .client-mobile-card h4 {
+  color: #0f172a !important;
+  font-weight: 800;
+}
+
+[data-theme="light"] .sidebar-mobile-backdrop {
+  background: rgba(15, 23, 42, 0.5);
+}
 

@@ -18,7 +18,7 @@ import {
   Receipt
 } from 'lucide-react';
 import { PLATFORMS } from '../constants/platforms';
-import { calcularDiasRestantes, formatearFecha, verificarDesfase } from '../utils/storage';
+import { calcularDiasRestantes, formatearFecha } from '../utils/storage';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
 import { Pagination } from './Pagination';
 import { useToast } from '../context/ToastContext';
@@ -63,13 +63,11 @@ export function ClientsView({
     const dias = calcularDiasRestantes(cli.fechaVencimiento);
     const perfilInfo = perfilesMap[cli.perfilId];
     const cuentaInfo = cuentasMap[cli.cuentaId] || perfilInfo?.cuenta;
-    const desfase = verificarDesfase(cuentaInfo?.fechaCorte, cli.fechaVencimiento);
 
     // Filtro por pestaña
     if (activeFilter === 'por_vencer' && (dias > 2 || dias < 0)) return false;
     if (activeFilter === 'vencidos' && dias >= 0) return false;
     if (activeFilter === 'activos' && dias < 0) return false;
-    if (activeFilter === 'desfase' && !desfase.tieneDesfase) return false;
 
     // Filtro por búsqueda
     if (!searchTerm.trim()) return true;
@@ -109,13 +107,6 @@ export function ClientsView({
 
   const expiredCount = clientes.filter(c => calcularDiasRestantes(c.fechaVencimiento) < 0).length;
   const activeCount = clientes.filter(c => calcularDiasRestantes(c.fechaVencimiento) >= 0).length;
-  
-  // Conteo de clientes con riesgo de desfase con su cuenta matriz
-  const desfaseCount = clientes.filter(c => {
-    const perfilInfo = perfilesMap[c.perfilId];
-    const cuentaInfo = cuentasMap[c.cuentaId] || perfilInfo?.cuenta;
-    return verificarDesfase(cuentaInfo?.fechaCorte, c.fechaVencimiento).tieneDesfase;
-  }).length;
 
   const handleCopiarCelular = (celular, id) => {
     navigator.clipboard.writeText(celular);
@@ -143,7 +134,7 @@ export function ClientsView({
         {/* Píldoras de filtrado */}
         <div className="filter-pills">
           <button 
-            className={`pill-btn ${activeFilter === 'todos' ? 'active' : ''}`}
+            className={`pill-btn pill-todos ${activeFilter === 'todos' ? 'active' : ''}`}
             onClick={() => onFilterChange('todos')}
           >
             <span>Todos</span>
@@ -151,19 +142,18 @@ export function ClientsView({
           </button>
 
           <button 
-            className={`pill-btn urgent ${activeFilter === 'por_vencer' ? 'active' : ''}`}
+            className={`pill-btn pill-urgent ${activeFilter === 'por_vencer' ? 'active' : ''}`}
             onClick={() => onFilterChange('por_vencer')}
-            style={urgentCount > 0 ? { borderColor: 'rgba(245, 158, 11, 0.6)' } : undefined}
           >
             <Clock size={14} />
             <span>Por Vencer (≤ 2 Días)</span>
-            <span className="counter-badge" style={urgentCount > 0 ? { background: '#f59e0b', color: '#000' } : undefined}>
+            <span className="counter-badge">
               {urgentCount}
             </span>
           </button>
 
           <button 
-            className={`pill-btn ${activeFilter === 'activos' ? 'active' : ''}`}
+            className={`pill-btn pill-activos ${activeFilter === 'activos' ? 'active' : ''}`}
             onClick={() => onFilterChange('activos')}
           >
             <CheckCircle2 size={14} />
@@ -172,32 +162,13 @@ export function ClientsView({
           </button>
 
           <button 
-            className={`pill-btn ${activeFilter === 'vencidos' ? 'active' : ''}`}
+            className={`pill-btn pill-vencidos ${activeFilter === 'vencidos' ? 'active' : ''}`}
             onClick={() => onFilterChange('vencidos')}
           >
             <AlertTriangle size={14} />
             <span>Vencidos</span>
             <span className="counter-badge">{expiredCount}</span>
           </button>
-
-          {desfaseCount > 0 && (
-            <button 
-              className={`pill-btn ${activeFilter === 'desfase' ? 'active' : ''}`}
-              onClick={() => onFilterChange('desfase')}
-              style={{
-                borderColor: 'rgba(245, 158, 11, 0.5)',
-                color: '#fbbf24',
-                background: activeFilter === 'desfase' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245, 158, 11, 0.08)'
-              }}
-              title="Clientes cuya cuenta matriz vence antes que su membresía"
-            >
-              <AlertTriangle size={14} />
-              <span>Riesgo Desfase</span>
-              <span className="counter-badge" style={{ background: '#f59e0b', color: '#000' }}>
-                {desfaseCount}
-              </span>
-            </button>
-          )}
 
           <button className="btn btn-primary" onClick={onNewClient} style={{ padding: '7px 14px', fontSize: '0.82rem' }}>
             <Plus size={16} />
@@ -259,14 +230,14 @@ export function ClientsView({
                       {/* Celular y Nombre */}
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                          <span style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.92rem' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.92rem' }}>
                             {cli.nombre || 'Cliente'}
                           </span>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                             <span style={{ 
                               fontFamily: 'var(--font-mono)', 
                               fontSize: '0.8rem', 
-                              color: '#94a3b8' 
+                              color: 'var(--text-secondary)' 
                             }}>
                               {cli.codigoPais} {cli.celular}
                             </span>
@@ -293,6 +264,7 @@ export function ClientsView({
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                           <span 
                             className="platform-pill"
+                            data-platform={platformInfo.id}
                             style={{
                               backgroundColor: platformInfo.badgeBg,
                               color: platformInfo.textColor,
@@ -301,22 +273,9 @@ export function ClientsView({
                           >
                             {platformInfo.name}
                           </span>
-                          <span style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                             {perfilInfo?.nombre || `Perfil ${perfilInfo?.numero || '?'}`}
                           </span>
-                          {(() => {
-                            const desfase = verificarDesfase(cuentaInfo?.fechaCorte, cli.fechaVencimiento);
-                            if (!desfase.tieneDesfase) return null;
-                            return (
-                              <span 
-                                className="desfase-tag"
-                                title={`⚠️ Riesgo de corte: La cuenta matriz vence el ${formatearFecha(cuentaInfo?.fechaCorte)}, antes de los 30 días del cliente.`}
-                              >
-                                <AlertTriangle size={11} />
-                                <span>Corte matriz: {formatearFecha(cuentaInfo?.fechaCorte)}</span>
-                              </span>
-                            );
-                          })()}
                         </div>
                       </td>
 
@@ -329,7 +288,7 @@ export function ClientsView({
 
                       {/* Fecha de Inicio */}
                       <td>
-                        <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                           {formatearFecha(cli.fechaInicio)}
                         </span>
                       </td>
@@ -337,10 +296,10 @@ export function ClientsView({
                       {/* Fecha de Vencimiento (30 días) */}
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                          <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#f8fafc' }}>
+                          <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                             {formatearFecha(cli.fechaVencimiento)}
                           </span>
-                          <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                             Plan de 30 días
                           </span>
                         </div>
@@ -463,6 +422,7 @@ export function ClientsView({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span 
                         className="platform-pill"
+                        data-platform={platformInfo.id}
                         style={{
                           backgroundColor: platformInfo.badgeBg,
                           color: platformInfo.textColor,
@@ -472,7 +432,7 @@ export function ClientsView({
                       >
                         {platformInfo.name}
                       </span>
-                      <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#f8fafc' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                         {perfilInfo?.nombre || `Perfil ${perfilInfo?.numero || '?'}`}
                       </span>
                     </div>
@@ -486,11 +446,11 @@ export function ClientsView({
                   <div className="mobile-card-body">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
-                        <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff', marginBottom: '2px' }}>
+                        <h4 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-light)', marginBottom: '2px' }}>
                           {cli.nombre || 'Cliente'}
                         </h4>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: '#94a3b8' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                             {cli.codigoPais} {cli.celular}
                           </span>
                           <button
@@ -545,38 +505,15 @@ export function ClientsView({
                       display: 'flex', 
                       justifyContent: 'space-between', 
                       fontSize: '0.76rem', 
-                      color: '#94a3b8',
-                      background: 'rgba(15, 23, 42, 0.6)',
+                      color: 'var(--text-secondary)',
+                      background: 'var(--bg-input)',
                       padding: '8px 12px',
                       borderRadius: '8px',
                       marginTop: '6px'
                     }}>
                       <span>Inicio: <strong>{formatearFecha(cli.fechaInicio)}</strong></span>
-                      <span>Vence (30d): <strong style={{ color: '#f8fafc' }}>{formatearFecha(cli.fechaVencimiento)}</strong></span>
+                      <span>Vence (30d): <strong style={{ color: 'var(--text-primary)' }}>{formatearFecha(cli.fechaVencimiento)}</strong></span>
                     </div>
-
-                    {/* Alerta de Desfase en Móvil */}
-                    {(() => {
-                      const desfase = verificarDesfase(cuentaInfo?.fechaCorte, cli.fechaVencimiento);
-                      if (!desfase.tieneDesfase) return null;
-                      return (
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          background: 'rgba(245, 158, 11, 0.12)',
-                          border: '1px solid rgba(245, 158, 11, 0.4)',
-                          borderRadius: '6px',
-                          padding: '6px 10px',
-                          fontSize: '0.74rem',
-                          color: '#fbbf24',
-                          marginTop: '6px'
-                        }}>
-                          <AlertTriangle size={14} style={{ flexShrink: 0 }} />
-                          <span>⚠️ Matriz corta el {formatearFecha(cuentaInfo?.fechaCorte)} ({desfase.diasDiferencia}d antes)</span>
-                        </div>
-                      );
-                    })()}
                   </div>
 
                   {/* Fila Inferior: Botones de Acción Móviles (WhatsApp Gigante + Recibo + Renovar + Liberar) */}
@@ -586,7 +523,7 @@ export function ClientsView({
                       className={`btn btn-whatsapp mobile-wa-btn ${esUrgente ? 'pulse-attention' : ''}`}
                       onClick={() => onOpenWhatsApp(cli, perfilInfo, cuentaInfo)}
                     >
-                      <WhatsAppIcon size={19} color="#063c19" />
+                      <WhatsAppIcon size={19} color="#ffffff" />
                       <span>
                         {esUrgente ? 'Avisar por WhatsApp (2 Días)' : 'Enviar WhatsApp'}
                       </span>

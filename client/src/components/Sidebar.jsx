@@ -4,16 +4,15 @@ import {
   Tv, 
   KeyRound, 
   Globe, 
-  Database, 
   ChevronLeft, 
   ChevronRight, 
   X, 
-  AlertTriangle, 
   Bell, 
   Cloud, 
   HardDrive,
-  Download,
-  Sparkles
+  Sparkles,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { FlowStreamLogo } from './icons/FlowStreamLogo';
 
@@ -23,15 +22,13 @@ export function Sidebar({
   clientCount = 0,
   urgentCount = 0,
   accountCount = 0,
-  desfaseCount = 0,
   isCloudConnected = false,
-  onOpenDatabase = () => {},
-  isInstallable = false,
-  onInstallPWA = () => {},
   isMobileOpen = false,
   onCloseMobile = () => {},
   isCollapsed = false,
-  onToggleCollapse = () => {}
+  onToggleCollapse = () => {},
+  theme = 'dark',
+  onToggleTheme = () => {}
 }) {
   const navItems = [
     {
@@ -49,7 +46,6 @@ export function Sidebar({
       desc: 'Perfiles y contraseñas',
       icon: Tv,
       badge: accountCount,
-      desfaseBadge: desfaseCount > 0 ? desfaseCount : null,
       color: '#06b6d4'
     },
     {
@@ -135,6 +131,7 @@ export function Sidebar({
               return (
                 <button
                   key={item.id}
+                  data-id={item.id}
                   className={`sidebar-nav-btn ${isActive ? 'active' : ''}`}
                   onClick={() => {
                     onSelectTab(item.id);
@@ -165,18 +162,9 @@ export function Sidebar({
                             </span>
                           )}
 
-                          {item.desfaseBadge && (
+                          {item.badge && !item.urgentBadge && (
                             <span 
-                              className="sidebar-badge warning" 
-                              title={`${item.desfaseBadge} en riesgo de desfase con cuenta maestra`}
-                            >
-                              <AlertTriangle size={11} /> {item.desfaseBadge}
-                            </span>
-                          )}
-
-                          {item.badge && !item.urgentBadge && !item.desfaseBadge && (
-                            <span 
-                              className="sidebar-badge count"
+                              className={`sidebar-badge count badge-${item.id}`}
                               style={item.badgeColor ? { background: `${item.badgeColor}22`, color: item.badgeColor, borderColor: `${item.badgeColor}55` } : {}}
                             >
                               {item.badge}
@@ -189,7 +177,7 @@ export function Sidebar({
                   )}
 
                   {/* Dot indicador colapsado si tiene alertas */}
-                  {isCollapsed && (item.urgentBadge || item.desfaseBadge) && (
+                  {isCollapsed && item.urgentBadge && (
                     <span className="sidebar-collapsed-alert-dot" />
                   )}
                 </button>
@@ -220,37 +208,8 @@ export function Sidebar({
           </div>
         )}
 
-        {/* Pie del Sidebar: Almacenamiento, SQL y Collapse */}
+        {/* Pie del Sidebar: Almacenamiento, Tema y Collapse */}
         <div className="sidebar-footer">
-          {/* Botón PWA si está disponible */}
-          {isInstallable && (
-            <button 
-              className="sidebar-footer-action pwa-install"
-              onClick={onInstallPWA}
-              title="Instalar App en Celular o PC"
-            >
-              <Download size={18} />
-              {!isCollapsed && <span>Instalar App PWA</span>}
-            </button>
-          )}
-
-          {/* Botón de Base de Datos y Respaldo SQL */}
-          <button 
-            className="sidebar-footer-action db-btn"
-            onClick={() => {
-              onOpenDatabase();
-              onCloseMobile();
-            }}
-            title="Copiar SQL, hacer backup o restaurar datos"
-          >
-            <Database size={18} color="#06b6d4" />
-            {!isCollapsed && (
-              <div className="db-action-text">
-                <span className="db-action-title">Base de Datos SQL</span>
-                <span className="db-action-sub">Consultas y Respaldos</span>
-              </div>
-            )}
-          </button>
 
           {/* Estado de Almacenamiento */}
           {!isCollapsed && (
@@ -268,6 +227,29 @@ export function Sidebar({
               )}
             </div>
           )}
+
+          {/* Selector de Modo Claro / Oscuro */}
+          <button 
+            className="sidebar-footer-action theme-toggle-btn"
+            onClick={onToggleTheme}
+            title={theme === 'dark' ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
+          >
+            {theme === 'dark' ? (
+              <Sun size={18} color="#f59e0b" />
+            ) : (
+              <Moon size={18} color="#6366f1" />
+            )}
+            {!isCollapsed && (
+              <div className="db-action-text">
+                <span className="theme-action-title">
+                  {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
+                </span>
+                <span className="theme-action-sub">
+                  {theme === 'dark' ? 'Cambiar a interfaz diurna' : 'Cambiar a interfaz nocturna'}
+                </span>
+              </div>
+            )}
+          </button>
 
           {/* Botón de colapso para Desktop */}
           <button 

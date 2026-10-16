@@ -85,10 +85,10 @@ export function DeleteClientModal({
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
               <div>
-                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc', display: 'block' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>
                   {cliente.nombre || 'Cliente sin nombre'}
                 </span>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                   <Phone size={13} style={{ color: '#25d366' }} />
                   {cliente.codigoPais} {cliente.celular}
                 </span>

@@ -90,38 +90,52 @@ function extractCodesFromEmail(text, html, subject, toHeaders) {
     }
   }
 
-  // 3. Extraer códigos numéricos
+  // 3. Extraer códigos numéricos y clasificar tipo
   let codigo = '';
-  let tipo = 'general';
+  let tipo = 'login_code';
+
+  const resetPassRegex = /(?:restablecer|cambiar|reset|recuperar|actualizar)\s+(?:tu\s+)?contrase[ñn]a/i;
+  const isReset = resetPassRegex.test(content);
+
+  const travelRegex = /(?:modo\s+viaje|viajero|viaje|temporal|acceso\s+temporal|travel)/i;
+  const isTravel = travelRegex.test(content);
 
   // A. Netflix Hogar (4 dígitos)
   const netflixHogarRegex = /(?:c[oó]digo(?: de confirmaci[oó]n| para actualizar| de acceso)?(?:\s+es)?(?:\s*:)?|\bhogar\b[^\d]{1,25})\s*(\d{4})\b/i;
   const matchNetflix = content.match(netflixHogarRegex);
 
   // B. OTP Multiplataforma (6 dígitos)
-  const otp6Regex = /(?:c[oó]digo|otp|passcode|one-time code|c[oó]digo de un solo uso)[^\d]{1,25}(\d{6})\b/i;
+  const otp6Regex = /(?:c[oó]digo|otp|passcode|one-time code|c[oó]digo de un solo uso|c[oó]digo de 6 d[ií]gitos)[^\d]{1,25}(\d{6})\b/i;
   const matchOtp6 = content.match(otp6Regex);
 
-  if (matchNetflix) {
-    codigo = matchNetflix[1];
-    tipo = 'netflix_hogar';
+  if (isReset) {
+    tipo = 'reset_password';
+    if (matchOtp6) codigo = matchOtp6[1];
+    else if (matchNetflix) codigo = matchNetflix[1];
+  } else if (isTravel) {
+    tipo = 'travel_mode';
+    if (matchNetflix) codigo = matchNetflix[1];
+    else if (matchOtp6) codigo = matchOtp6[1];
+  } else if (matchNetflix || lower.includes('hogar') || (enlace && enlace.includes('update-primary-location'))) {
+    tipo = 'update_household';
+    if (matchNetflix) codigo = matchNetflix[1];
   } else if (matchOtp6) {
     codigo = matchOtp6[1];
-    tipo = 'otp_acceso';
+    tipo = 'otp_6_digits';
   } else {
-    // Si no coincide con palabras clave, buscar patrones aislados
+    // Si no coincide con palabras clave específicas, buscar patrones aislados
     const matches4 = content.match(/\b\d{4}\b/g);
     const matches6 = content.match(/\b\d{6}\b/g);
 
     if (plataforma === 'Netflix' && matches4 && matches4.length > 0) {
       codigo = matches4[0];
-      tipo = 'netflix_hogar';
+      tipo = 'update_household';
     } else if (matches6 && matches6.length > 0) {
       codigo = matches6[0];
-      tipo = 'otp_acceso';
+      tipo = 'otp_6_digits';
     } else if (matches4 && matches4.length > 0) {
       codigo = matches4[0];
-      tipo = 'netflix_hogar';
+      tipo = 'login_code';
     }
   }
 
@@ -255,32 +269,35 @@ async function scanRecentMessages() {
 
         if (isStreaming) {
           const extracted = extractCodesFromEmail(parsed.text, parsed.html, subject, to);
+          const plainText = (parsed.text || (parsed.html ? parsed.html.replace(/<[^>]+>/g, ' ') : '')).trim();
 
-          if (extracted.codigo || extracted.enlace) {
+          if (extracted.codigo || extracted.enlace || isStreaming) {
             const codeItem = {
               id: 'code-' + message.uid + '-' + Date.now().toString(36),
               uid: message.uid,
               fecha: parsed.date ? parsed.date.toISOString() : new Date().toISOString(),
-              codigo: extracted.codigo,
-              enlace: extracted.enlace,
-              tipo: extracted.tipo,
-              plataforma: extracted.plataforma,
+              codigo: extracted.codigo || '',
+              enlace: extracted.enlace || '',
+              tipo: extracted.tipo || 'login_code',
+              plataforma: extracted.plataforma || 'Netflix',
               remitente: from,
               asunto: subject,
               cuentaDestino: extracted.cuentaDestino || to,
+              cuerpoTexto: plainText.slice(0, 3000),
               origen: 'automatico_imap'
             };
 
-            // Evitar duplicar códigos idénticos recibidos en los últimos 15 min
+            // Evitar duplicar códigos o correos idénticos recibidos
             const yaExiste = extractedCodesHistory.some(
-              c => c.codigo === codeItem.codigo && Math.abs(new Date(c.fecha) - new Date(codeItem.fecha)) < 15 * 60 * 1000
+              c => (c.uid === codeItem.uid) || 
+                   (c.codigo && c.codigo === codeItem.codigo && Math.abs(new Date(c.fecha) - new Date(codeItem.fecha)) < 15 * 60 * 1000)
             );
 
             if (!yaExiste) {
               extractedCodesHistory = [codeItem, ...extractedCodesHistory].slice(0, 50);
               foundCodes.push(codeItem);
               monitorStatus.codesFoundCount = extractedCodesHistory.length;
-              console.log(`[IMAP] ⚡ ¡NUEVO CÓDIGO DETECTADO! [${extracted.plataforma}] Código: ${extracted.codigo}`);
+              console.log(`[IMAP] ⚡ ¡NUEVO MENSAJE DE STREAMING DETECTADO! [${codeItem.plataforma}] Código: ${codeItem.codigo || 'Enlace/Mensaje'}`);
             }
           }
         }
@@ -369,6 +386,64 @@ app.post('/api/imap/sync-now', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Error durante la sincronización: ' + err.message });
+  }
+});
+
+// 3.1 Extraer código según correo y tipo seleccionado
+app.post('/api/imap/extract', async (req, res) => {
+  const { targetEmail, codeType, plataforma } = req.body || {};
+  try {
+    let freshCodes = [];
+    if (isMonitoring && imapClient) {
+      freshCodes = await scanRecentMessages();
+    }
+
+    let match = null;
+    if (extractedCodesHistory.length > 0) {
+      if (targetEmail && targetEmail !== 'central' && targetEmail !== 'todos' && targetEmail !== 'manual') {
+        const tEmail = targetEmail.toLowerCase();
+        match = extractedCodesHistory.find(item => {
+          const dest = (item.cuentaDestino || '').toLowerCase();
+          const rem = (item.remitente || '').toLowerCase();
+          const body = (item.cuerpoTexto || '').toLowerCase();
+          const matchesEmail = dest.includes(tEmail) || body.includes(tEmail) || rem.includes(tEmail);
+          const matchesType = !codeType || item.tipo === codeType;
+          return matchesEmail && matchesType;
+        });
+
+        if (!match) {
+          match = extractedCodesHistory.find(item => {
+            const dest = (item.cuentaDestino || '').toLowerCase();
+            const body = (item.cuerpoTexto || '').toLowerCase();
+            return dest.includes(tEmail) || body.includes(tEmail);
+          });
+        }
+      }
+
+      if (!match && codeType) {
+        match = extractedCodesHistory.find(item => item.tipo === codeType);
+      }
+
+      if (!match && plataforma) {
+        match = extractedCodesHistory.find(item => 
+          item.plataforma.toLowerCase() === plataforma.toLowerCase()
+        );
+      }
+
+      if (!match) {
+        match = extractedCodesHistory[0];
+      }
+    }
+
+    res.json({
+      success: true,
+      found: !!match,
+      item: match || null,
+      freshCount: freshCodes.length,
+      allCodes: extractedCodesHistory
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Error durante la extracción: ' + err.message });
   }
 });
 

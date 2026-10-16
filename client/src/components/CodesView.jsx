@@ -47,19 +47,28 @@ export function CodesView({ clientes = [], cuentas = [] }) {
   const [extractedData, setExtractedData] = useState({
     codigo: '',
     enlace: '',
-    tipo: 'general',
-    plataformaSugerida: 'Netflix'
+    tipo: 'login_code',
+    plataformaSugerida: 'Netflix',
+    remitente: '',
+    asunto: '',
+    fecha: null,
+    cuerpoTexto: '',
+    cuentaDestino: '',
+    origen: ''
   });
 
-  // Selección de cliente / perfil asociado
+  // Selección de cuenta maestra / correo de recepción / cliente / perfil asociado
+  const [selectedAccountId, setSelectedAccountId] = useState(() => cuentas.length > 0 ? String(cuentas[0].id) : '');
+  const [selectedTargetEmail, setSelectedTargetEmail] = useState(() => cuentas.length > 0 ? cuentas[0].correo : 'central');
   const [selectedClientId, setSelectedClientId] = useState('');
-  const [selectedPlataforma, setSelectedPlataforma] = useState('Netflix');
+  const [selectedPlataforma, setSelectedPlataforma] = useState(() => cuentas.length > 0 ? cuentas[0].plataforma : 'Netflix');
   const [customNota, setCustomNota] = useState('');
 
-  // Historial
+  // Historial y estados de copiado
   const [history, setHistory] = useState(() => cargarCodigosRecientes());
   const [copiedId, setCopiedId] = useState(null);
   const [copiedMain, setCopiedMain] = useState(false);
+  const [copiedEmailMessage, setCopiedEmailMessage] = useState(false);
   const [historyFilter, setHistoryFilter] = useState('');
 
   // 5 Tipos de códigos manejados para cuentas de streaming
@@ -170,7 +179,25 @@ export function CodesView({ clientes = [], cuentas = [] }) {
     }
   };
 
-  // Acción del botón principal "🔑 Obtener código"
+  // Copiar mensaje completo de Gmail
+  const handleCopyEmailMessage = () => {
+    const textToCopy = [
+      extractedData.asunto ? `Asunto: ${extractedData.asunto}` : '',
+      extractedData.remitente ? `De: ${extractedData.remitente}` : '',
+      extractedData.codigo ? `Código: ${extractedData.codigo}` : '',
+      extractedData.enlace ? `Enlace: ${extractedData.enlace}` : '',
+      '',
+      extractedData.cuerpoTexto || ''
+    ].filter(Boolean).join('\n');
+
+    if (!textToCopy) return;
+    navigator.clipboard.writeText(textToCopy);
+    setCopiedEmailMessage(true);
+    toast.success('Mensaje de Gmail copiado al portapapeles');
+    setTimeout(() => setCopiedEmailMessage(false), 2000);
+  };
+
+  // Acción del botón principal "⚡ Extraer Código de Gmail" (PASO 3)
   const handleGetCode = async () => {
     setIsGettingCode(true);
 
@@ -179,35 +206,61 @@ export function CodesView({ clientes = [], cuentas = [] }) {
       const parsed = extraerCodigoDeTexto(rawInput);
       setExtractedData({
         ...parsed,
-        tipo: selectedCodeType
+        tipo: selectedCodeType,
+        remitente: 'Pegado Manual / Portapapeles',
+        asunto: `Código para ${selectedPlataforma}`,
+        fecha: new Date().toISOString(),
+        cuerpoTexto: rawInput,
+        cuentaDestino: selectedTargetEmail || 'Manual',
+        origen: 'manual'
       });
       setIsGettingCode(false);
-      toast.success('¡Código procesado con éxito!');
+      toast.success(parsed.codigo ? `¡Código ${parsed.codigo} extraído con éxito!` : '¡Mensaje procesado con éxito!');
       return;
     }
 
-    // 2. Si el buzón IMAP está conectado, escanear o buscar el código más reciente
-    if (imapStatus.connected) {
+    // 2. Si el servicio IMAP está disponible, consultar endpoint de extracción
+    if (imapStatus.serverOnline) {
       try {
-        const res = await fetch(`${API_SERVER_URL}/api/imap/sync-now`, { method: 'POST' });
+        const res = await fetch(`${API_SERVER_URL}/api/imap/extract`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetEmail: selectedTargetEmail,
+            codeType: selectedCodeType,
+            plataforma: selectedPlataforma
+          })
+        });
         const data = await res.json();
-        if (res.ok) {
+        if (res.ok && data.found && data.item) {
+          const item = data.item;
+          setExtractedData({
+            codigo: item.codigo || '',
+            enlace: item.enlace || '',
+            tipo: item.tipo || selectedCodeType,
+            plataformaSugerida: item.plataforma || selectedPlataforma,
+            remitente: item.remitente || 'Buzón Gmail',
+            asunto: item.asunto || 'Mensaje de Streaming',
+            fecha: item.fecha || new Date().toISOString(),
+            cuerpoTexto: item.cuerpoTexto || '',
+            cuentaDestino: item.cuentaDestino || selectedTargetEmail || '',
+            origen: 'gmail'
+          });
+          if (item.plataforma) setSelectedPlataforma(item.plataforma);
           checkImapStatus();
-          if (data.latestCodes && data.latestCodes.length > 0) {
-            const found = data.latestCodes[0];
-            setExtractedData({
-              codigo: found.codigo || '',
-              enlace: found.enlace || '',
-              tipo: selectedCodeType,
-              plataformaSugerida: found.plataforma || selectedPlataforma
-            });
-            toast.success(`¡Código obtenido de tu buzón central! (${found.codigo})`);
-            setIsGettingCode(false);
-            return;
+          toast.success(item.codigo 
+            ? `¡Código ${item.codigo} extraído de Gmail con éxito!` 
+            : '¡Mensaje de Gmail encontrado!'
+          );
+          setIsGettingCode(false);
+          return;
+        } else if (res.ok && !data.found) {
+          if (imapStatus.connected) {
+            toast.info(`Buzón escaneado. No se encontró correo reciente para ${selectedTargetEmail || 'tu cuenta'}. Puedes esperar unos segundos o pegar el texto.`);
           }
         }
       } catch (err) {
-        console.error('Error sincronizando IMAP:', err);
+        console.error('Error al extraer de IMAP:', err);
       }
     }
 
@@ -220,19 +273,25 @@ export function CodesView({ clientes = [], cuentas = [] }) {
           const parsed = extraerCodigoDeTexto(clipText);
           setExtractedData({
             ...parsed,
-            tipo: selectedCodeType
+            tipo: selectedCodeType,
+            remitente: 'Portapapeles',
+            asunto: `Código para ${selectedPlataforma}`,
+            fecha: new Date().toISOString(),
+            cuerpoTexto: clipText,
+            cuentaDestino: selectedTargetEmail || 'Portapapeles',
+            origen: 'clipboard'
           });
-          toast.success('¡Código obtenido desde tu portapapeles!');
+          toast.success('¡Código y mensaje obtenidos desde tu portapapeles!');
           setIsGettingCode(false);
           return;
         }
       }
     } catch {
-      // Continuar al aviso
+      // Ignorar si no hay permisos de portapapeles
     }
 
     setIsGettingCode(false);
-    toast.info(`Pega el texto del correo o conecta tu buzón para obtener: ${CODE_TYPE_OPTIONS.find(o => o.id === selectedCodeType)?.label}`);
+    toast.info(`Pega el texto del correo o espera a que llegue a tu correo de Gmail.`);
   };
 
   // Guardar y probar conexión IMAP
@@ -281,27 +340,40 @@ export function CodesView({ clientes = [], cuentas = [] }) {
   useEffect(() => {
     if (rawInput.trim()) {
       const parsed = extraerCodigoDeTexto(rawInput);
-      setExtractedData(parsed);
+      setExtractedData(prev => ({
+        ...prev,
+        ...parsed,
+        tipo: selectedCodeType,
+        cuerpoTexto: rawInput,
+        remitente: prev.remitente || 'Pegado Manual',
+        asunto: prev.asunto || `Código para ${selectedPlataforma}`,
+        fecha: prev.fecha || new Date().toISOString()
+      }));
       if (parsed.plataformaSugerida) {
         setSelectedPlataforma(parsed.plataformaSugerida);
       }
-    } else {
-      setExtractedData({
-        codigo: '',
-        enlace: '',
-        tipo: 'general',
-        plataformaSugerida: selectedPlataforma
-      });
     }
   }, [rawInput]);
 
+  const selectedAccount = cuentas.find(cta => String(cta.id) === String(selectedAccountId));
   const selectedClient = clientes.find(c => String(c.id) === String(selectedClientId));
-  const clientAccount = cuentas.find(cta => String(cta.id) === String(selectedClient?.cuentaId));
-  const clientProfile = clientAccount?.perfiles?.find(p => String(p.id) === String(selectedClient?.perfilId));
+  const effectiveAccount = selectedAccount || cuentas.find(cta => String(cta.id) === String(selectedClient?.cuentaId));
+  const clientProfile = effectiveAccount?.perfiles?.find(p => String(p.id) === String(selectedClient?.perfilId));
+
+  // Filtrar clientes según la cuenta maestra seleccionada
+  const clientesFiltrados = selectedAccountId 
+    ? clientes.filter(c => String(c.cuentaId) === String(selectedAccountId))
+    : clientes;
 
   useEffect(() => {
-    if (clientAccount?.plataforma) {
-      setSelectedPlataforma(clientAccount.plataforma);
+    if (selectedAccount?.plataforma) {
+      setSelectedPlataforma(selectedAccount.plataforma);
+    }
+  }, [selectedAccountId]);
+
+  useEffect(() => {
+    if (selectedClient?.cuentaId && !selectedAccountId) {
+      setSelectedAccountId(String(selectedClient.cuentaId));
     }
   }, [selectedClientId]);
 
@@ -348,7 +420,7 @@ export function CodesView({ clientes = [], cuentas = [] }) {
     }
 
     const saved = guardarCodigoReciente({
-      cuentaId: clientAccount?.id || null,
+      cuentaId: effectiveAccount?.id || null,
       plataforma: selectedPlataforma,
       perfilId: clientProfile?.id || null,
       perfilNombre: clientProfile?.nombre || '',
@@ -508,14 +580,15 @@ export function CodesView({ clientes = [], cuentas = [] }) {
       </div>
 
       {/* 2. Grid Principal: Extractor Inteligente y Código en Grande */}
+      {/* 2. Grid Principal: Flujo Paso a Paso & Mensaje de Gmail Encontrado */}
       <div className="codes-grid">
-        {/* PANEL IZQUIERDO: Extractor */}
+        {/* PANEL IZQUIERDO: Extractor Flujo Paso a Paso */}
         <div className="codes-extractor-card">
           <div className="card-header-styled">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Sparkles size={18} color="#6366f1" />
-              <span style={{ fontWeight: 700, fontSize: '1rem', color: '#f8fafc' }}>
-                Extractor Rápido (Portapapeles o Pegado)
+              <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                Extractor Inteligente de Códigos & Gmail
               </span>
             </div>
 
@@ -526,18 +599,94 @@ export function CodesView({ clientes = [], cuentas = [] }) {
               title="Pegar texto del portapapeles"
             >
               <Copy size={14} />
-              <span>Pegar de Portapapeles</span>
+              <span>Pegar Portapapeles</span>
             </button>
           </div>
 
-          {/* Selector de los 5 tipos de códigos de streaming solicitados */}
-          <div className="streaming-code-selector-wrapper" style={{ marginTop: '16px', marginBottom: '16px' }}>
-            <label className="form-label" style={{ marginBottom: '8px', color: '#c084fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <KeyRound size={15} color="#c084fc" />
-              <span>Selecciona el tipo de código a obtener:</span>
-            </label>
+          {/* =========================================================
+              PASO 1: SELECCIONAR EL CORREO A DONDE LLEGAN LOS CORREOS
+             ========================================================= */}
+          <div className="step-container-box">
+            <div className="step-badge-tag">
+              <span className="step-num-pill">Paso 1</span>
+              <span className="step-title-heading">Selecciona el correo donde llegan todos los correos:</span>
+            </div>
 
-            <div className="streaming-code-types-container">
+            <div className="form-group" style={{ marginTop: '8px', marginBottom: '0' }}>
+              <div className="target-mail-select-wrapper">
+                <Mail size={17} className="select-icon-left" color="#ea4335" />
+                <select
+                  className="form-select target-mail-select"
+                  value={selectedTargetEmail}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedTargetEmail(val);
+                    if (val === 'central' || val === 'todos' || val === 'manual') {
+                      setSelectedAccountId('');
+                    } else {
+                      const acc = cuentas.find(c => c.correo === val || String(c.id) === val);
+                      if (acc) {
+                        setSelectedAccountId(String(acc.id));
+                        setSelectedPlataforma(acc.plataforma);
+                        setSelectedTargetEmail(acc.correo);
+                      }
+                    }
+                  }}
+                >
+                  {imapStatus.connected && (
+                    <option value={imapStatus.email}>
+                      📬 Buzón Central Gmail ({imapStatus.email}) [En Vivo]
+                    </option>
+                  )}
+                  {!imapStatus.connected && (
+                    <option value="central">
+                      📬 Buzón Central Gmail (Reenvío unificado de correos)
+                    </option>
+                  )}
+
+                  <optgroup label="Cuentas Maestras Registradas">
+                    {cuentas.map(cta => (
+                      <option key={cta.id} value={cta.correo}>
+                        📺 {cta.plataforma} — {cta.correo} ({(cta.perfiles || []).filter(p => p.estado === 'asignado').length}/{(cta.perfiles || []).length} perfiles)
+                      </option>
+                    ))}
+                  </optgroup>
+
+                  <optgroup label="Otras opciones">
+                    <option value="todos">🌐 Cualquier cuenta / Todos los correos recibidos</option>
+                    <option value="manual">📝 Entrada manual / Pegado libre</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Indicador de cuenta activa */}
+              <div className="target-account-subinfo">
+                <span>
+                  {selectedAccount ? (
+                    <>Plataforma: <strong>{selectedAccount.plataforma}</strong> ({selectedAccount.correo})</>
+                  ) : imapStatus.connected ? (
+                    <>Buzón conectado: <strong>{imapStatus.email}</strong></>
+                  ) : (
+                    <>Buzón unificado de recepción de códigos</>
+                  )}
+                </span>
+                <span className="platform-pill" style={{ fontSize: '0.72rem', padding: '1px 8px' }}>
+                  {selectedPlataforma}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* =========================================================
+              PASO 2: SELECCIONAR EL TIPO DE CÓDIGO QUE NECESITO EXTRAER
+             ========================================================= */}
+          <div className="step-container-box">
+            <div className="step-badge-tag">
+              <span className="step-num-pill">Paso 2</span>
+              <span className="step-title-heading">Selecciona el tipo de código que necesitas extraer:</span>
+            </div>
+
+            <div className="streaming-code-types-container" style={{ marginTop: '6px' }}>
               {CODE_TYPE_OPTIONS.map((opt) => {
                 const IconComponent = opt.icon;
                 const isSelected = selectedCodeType === opt.id;
@@ -562,61 +711,56 @@ export function CodesView({ clientes = [], cuentas = [] }) {
                 );
               })}
             </div>
+          </div>
 
+          {/* =========================================================
+              PASO 3: BOTÓN "EXTRAER"
+             ========================================================= */}
+          <div style={{ marginTop: '16px' }}>
             <button
               type="button"
-              className="btn-obtener-codigo"
+              className="btn-extraer-principal"
               onClick={handleGetCode}
               disabled={isGettingCode || isSyncingImap}
             >
-              <KeyRound size={19} className={isGettingCode || isSyncingImap ? 'spin' : ''} />
-              <span>{isGettingCode || isSyncingImap ? 'Obteniendo código...' : 'Obtener código'}</span>
+              <KeyRound size={20} className={isGettingCode || isSyncingImap ? 'spin' : ''} />
+              <span>
+                {isGettingCode || isSyncingImap ? 'Buscando correo en Gmail...' : '⚡ Extraer Código de Gmail'}
+              </span>
             </button>
           </div>
 
-          <div className="form-group" style={{ marginTop: '14px' }}>
-            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>O pega manualmente el contenido del correo:</span>
+          {/* OPCIONES SECUNDARIAS / OPCIONALES */}
+          <div className="form-group" style={{ marginTop: '20px' }}>
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+              <span>O pega manualmente el contenido del correo (opcional):</span>
               <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                 {rawInput.length} caracteres
               </span>
             </label>
             <textarea
               className="form-textarea codes-textarea"
-              rows={4}
+              rows={3}
               placeholder="Ejemplo: 'Hola, tu código para actualizar tu Hogar con Netflix es 4829. Validez de 15 minutos...'"
               value={rawInput}
               onChange={(e) => setRawInput(e.target.value)}
             />
           </div>
 
-          <div className="codes-meta-row">
-            <div className="form-group" style={{ flex: 1, minWidth: '180px' }}>
-              <label className="form-label">Plataforma:</label>
-              <select
-                className="form-select"
-                value={selectedPlataforma}
-                onChange={(e) => setSelectedPlataforma(e.target.value)}
-              >
-                <option value="Netflix">Netflix (Hogar / Viajero)</option>
-                <option value="Disney+">Disney+ (OTP / TV)</option>
-                <option value="HBO Max">HBO Max (Código TV)</option>
-                <option value="Prime Video">Amazon Prime (OTP)</option>
-                <option value="Paramount+">Paramount+</option>
-                <option value="Crunchyroll">Crunchyroll</option>
-                <option value="Spotify">Spotify</option>
-              </select>
-            </div>
-
-            <div className="form-group" style={{ flex: 1.5, minWidth: '220px' }}>
-              <label className="form-label">Enviar al Cliente (Opcional):</label>
+          <div className="codes-meta-row" style={{ marginTop: '10px' }}>
+            {/* Selector de Cliente */}
+            <div className="form-group" style={{ flex: 1.4, minWidth: '220px' }}>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Smartphone size={14} color="#25d366" />
+                <span>Enviar al Cliente (Opcional):</span>
+              </label>
               <select
                 className="form-select"
                 value={selectedClientId}
                 onChange={(e) => setSelectedClientId(e.target.value)}
               >
                 <option value="">-- Sin asignar (Solo extraer) --</option>
-                {clientes.map(cli => {
+                {clientesFiltrados.map(cli => {
                   const cta = cuentas.find(c => String(c.id) === String(cli.cuentaId));
                   return (
                     <option key={cli.id} value={cli.id}>
@@ -626,44 +770,72 @@ export function CodesView({ clientes = [], cuentas = [] }) {
                 })}
               </select>
             </div>
+
+            {/* Código a mano si se desea */}
+            <div className="form-group" style={{ flex: 0.8, minWidth: '130px' }}>
+              <label className="form-label">Código a mano:</label>
+              <input 
+                type="text"
+                className="form-input codes-manual-input"
+                style={{ maxWidth: '100%' }}
+                placeholder="Ej: 4920"
+                maxLength={8}
+                value={extractedData.codigo}
+                onChange={(e) => setExtractedData(prev => ({ ...prev, codigo: e.target.value.toUpperCase() }))}
+              />
+            </div>
           </div>
 
-          {selectedClient && (
+          {(effectiveAccount || selectedClient) && (
             <div className="codes-client-summary-box">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Smartphone size={16} color="#25d366" />
-                <span><strong>Cliente:</strong> {selectedClient.nombre}</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Tv size={16} color="#6366f1" />
+                  <span>
+                    <strong>Cuenta:</strong> {effectiveAccount?.correo || selectedTargetEmail || 'Sin correo asociado'}
+                    <span className="platform-pill" style={{ marginLeft: '8px', fontSize: '0.72rem', padding: '1px 6px' }}>
+                      {effectiveAccount?.plataforma || selectedPlataforma}
+                    </span>
+                  </span>
+                </div>
+                {selectedClient && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Smartphone size={15} color="#25d366" />
+                    <span><strong>Cliente:</strong> {selectedClient.nombre}</span>
+                  </div>
+                )}
               </div>
-              <div style={{ display: 'flex', gap: '16px', fontSize: '0.82rem', color: '#94a3b8', marginTop: '4px' }}>
-                <span>📱 {selectedClient.codigoPais} {selectedClient.celular}</span>
-                {clientProfile && <span>👤 {clientProfile.nombre}</span>}
-                {selectedClient.pin && <span>🔒 PIN: {selectedClient.pin}</span>}
-              </div>
+
+              {selectedClient && (
+                <div style={{ display: 'flex', gap: '16px', fontSize: '0.82rem', color: '#94a3b8', marginTop: '6px', flexWrap: 'wrap' }}>
+                  <span>📱 {selectedClient.codigoPais} {selectedClient.celular}</span>
+                  {clientProfile && <span>👤 Perfil: {clientProfile.nombre}</span>}
+                  {selectedClient.pin && <span>🔒 PIN: {selectedClient.pin}</span>}
+                </div>
+              )}
             </div>
           )}
-
-          <div className="codes-manual-row">
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>O escribe el código a mano:</span>
-            <input 
-              type="text"
-              className="form-input codes-manual-input"
-              placeholder="Ej: 4920"
-              maxLength={8}
-              value={extractedData.codigo}
-              onChange={(e) => setExtractedData(prev => ({ ...prev, codigo: e.target.value.toUpperCase() }))}
-            />
-          </div>
         </div>
 
-        {/* PANEL DERECHO: Tarjeta del Código Detectado */}
+        {/* =========================================================
+            PANEL DERECHO: CÓDIGO & MENSAJE DE GMAIL ENCONTRADO (PASO 4)
+           ========================================================= */}
         <div className="codes-result-card">
           <div className="result-card-inner">
-            <span className="result-tag">
-              {extractedData.tipo === 'netflix_hogar' ? '🏠 CÓDIGO NETFLIX HOGAR' : 
-               extractedData.tipo === 'otp_acceso' ? '🔑 CÓDIGO OTP DE SEGURIDAD' : 
-               extractedData.tipo === 'enlace_hogar' ? '🔗 ENLACE DE CONFIRMACIÓN' : '📺 ACCESO STREAMING'}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="result-tag">
+                {selectedCodeType === 'update_household' || extractedData.tipo === 'update_household' || extractedData.tipo === 'netflix_hogar' ? '🏠 CÓDIGO NETFLIX HOGAR' : 
+                 selectedCodeType === 'travel_mode' || extractedData.tipo === 'travel_mode' ? '✈️ MODO VIAJE' :
+                 selectedCodeType === 'reset_password' || extractedData.tipo === 'reset_password' ? '🔒 RESTABLECER CONTRASEÑA' :
+                 selectedCodeType === 'otp_6_digits' || extractedData.tipo === 'otp_6_digits' ? '🛡️ CÓDIGO DE 6 DÍGITOS OTP' : '🔑 CÓDIGO DE INICIO DE SESIÓN'}
+              </span>
 
+              <span className="platform-pill" style={{ fontSize: '0.74rem', padding: '2px 8px' }}>
+                {extractedData.plataformaSugerida || selectedPlataforma}
+              </span>
+            </div>
+
+            {/* Visualización del Código */}
             <div className="result-code-display">
               {extractedData.codigo ? (
                 <div className="code-text-neon">{extractedData.codigo}</div>
@@ -677,9 +849,70 @@ export function CodesView({ clientes = [], cuentas = [] }) {
             <p className="result-helper-text">
               {extractedData.codigo 
                 ? 'Código extraído listo para enviar o copiar'
-                : 'Pega un correo o espera a que llegue a tu buzón central'}
+                : 'Selecciona la cuenta y tipo de código, y pulsa "Extraer Código"'}
             </p>
 
+            {/* MENSAJE DE GMAIL ENCONTRADO */}
+            {(extractedData.cuerpoTexto || extractedData.asunto || extractedData.remitente) ? (
+              <div className="gmail-message-preview-card">
+                <div className="gmail-preview-header">
+                  <div className="gmail-logo-badge">
+                    <Mail size={16} color="#ea4335" />
+                    <span>Mensaje de GMAIL Encontrado</span>
+                  </div>
+                  {extractedData.fecha && (
+                    <span className="gmail-time-tag">
+                      {formatTimeAgo(extractedData.fecha)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="gmail-preview-meta">
+                  {extractedData.remitente && (
+                    <div className="gmail-meta-line">
+                      <span className="meta-label">De:</span>
+                      <span className="meta-value">{extractedData.remitente}</span>
+                    </div>
+                  )}
+                  {extractedData.asunto && (
+                    <div className="gmail-meta-line">
+                      <span className="meta-label">Asunto:</span>
+                      <span className="meta-value highlight">{extractedData.asunto}</span>
+                    </div>
+                  )}
+                  {extractedData.cuentaDestino && (
+                    <div className="gmail-meta-line">
+                      <span className="meta-label">Para:</span>
+                      <span className="meta-value">{extractedData.cuentaDestino}</span>
+                    </div>
+                  )}
+                </div>
+
+                {extractedData.cuerpoTexto && (
+                  <div className="gmail-preview-body">
+                    {extractedData.cuerpoTexto}
+                  </div>
+                )}
+
+                <div className="gmail-preview-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={handleCopyEmailMessage}
+                  >
+                    {copiedEmailMessage ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
+                    <span>{copiedEmailMessage ? '¡Copiado!' : 'Copiar Mensaje de Gmail'}</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="gmail-placeholder-box">
+                <Mail size={24} color="#64748b" style={{ opacity: 0.6, marginBottom: '6px' }} />
+                <span>Aquí aparecerá el mensaje original de Gmail encontrado con su asunto, remitente y código.</span>
+              </div>
+            )}
+
+            {/* Enlace oficial detectado */}
             {extractedData.enlace && (
               <div className="detected-link-box">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#38bdf8' }}>
@@ -709,12 +942,13 @@ export function CodesView({ clientes = [], cuentas = [] }) {
               </div>
             )}
 
+            {/* Acciones del Resultado */}
             <div className="result-actions-column">
               <button
                 type="button"
                 className="btn btn-whatsapp-large"
                 onClick={handleSendWhatsApp}
-                disabled={!extractedData.codigo && !extractedData.enlace}
+                disabled={!extractedData.codigo && !extractedData.enlace && !extractedData.cuerpoTexto}
               >
                 <Send size={18} />
                 <span>Enviar Código a WhatsApp</span>
@@ -748,7 +982,7 @@ export function CodesView({ clientes = [], cuentas = [] }) {
 
             <div className="codes-notice-box">
               <Clock size={15} color="#f59e0b" />
-              <span>Los códigos de Netflix Hogar expiran a los <strong>15 minutos</strong>.</span>
+              <span>Los códigos de acceso y enlaces de streaming expiran a los <strong>15 minutos</strong>.</span>
             </div>
           </div>
         </div>
@@ -896,7 +1130,7 @@ export function CodesView({ clientes = [], cuentas = [] }) {
             </div>
 
             {/* Pestañas internas del Modal */}
-            <div style={{ display: 'flex', gap: '6px', borderBottom: '1px solid var(--border-subtle)', padding: '0 20px', background: 'rgba(15,23,42,0.6)' }}>
+            <div className="modal-inner-tabs">
               <button
                 type="button"
                 className={`tab-btn ${activeGuideTab === 'config' ? 'active' : ''}`}
@@ -927,7 +1161,7 @@ export function CodesView({ clientes = [], cuentas = [] }) {
               {/* PESTAÑA 1: FORMULARIO DE CONEXIÓN */}
               {activeGuideTab === 'config' && (
                 <form onSubmit={handleSaveImapConfig} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div style={{ background: 'rgba(99,102,241,0.08)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(99,102,241,0.25)', fontSize: '0.82rem', color: '#c7d2fe' }}>
+                  <div className="modal-tip-box">
                     💡 <strong>¿Cómo funciona?</strong> Este correo receptor recibirá copias automáticas de los códigos de tus 6 a 10 correos. Flow Stream lo vigilará cada 15 segundos y extraerá los códigos de Netflix solos.
                   </div>
 

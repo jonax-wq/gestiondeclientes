@@ -23,7 +23,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { PLATFORMS } from '../constants/platforms';
-import { formatearFecha, calcularDiasRestantes, verificarDesfase } from '../utils/storage';
+import { formatearFecha, calcularDiasRestantes } from '../utils/storage';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
 import { Pagination } from './Pagination';
 import { useToast } from '../context/ToastContext';
@@ -141,10 +141,10 @@ export function AccountsView({
     <div className="content-card">
       <div className="toolbar">
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f8fafc' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-light)' }}>
             Cuentas Maestras
           </h2>
-          <p style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
             Administra tus cuentas de streaming completas y monitorea la ocupación de sus pantallas
           </p>
         </div>
@@ -180,11 +180,11 @@ export function AccountsView({
           flexWrap: 'wrap',
           marginBottom: '20px',
           paddingBottom: '16px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+          borderBottom: '1px solid var(--border-subtle)'
         }}>
           {/* Botones de plataformas */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
               <Tv size={14} /> Plataforma:
             </span>
 
@@ -320,12 +320,13 @@ export function AccountsView({
                   className="account-card-header"
                   style={{
                     background: platformInfo.bgGradient,
-                    borderColor: 'rgba(255, 255, 255, 0.08)'
+                    borderColor: 'var(--border-subtle)'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span
                       className="platform-pill"
+                      data-platform={platformInfo.id}
                       style={{
                         backgroundColor: platformInfo.badgeBg,
                         color: platformInfo.textColor,
@@ -335,7 +336,7 @@ export function AccountsView({
                     >
                       {platformInfo.name}
                     </span>
-                    <span style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                    <span className="account-card-header-subtext">
                       {ocupados}/{total} pantallas ocupadas
                     </span>
                   </div>
@@ -369,35 +370,6 @@ export function AccountsView({
                 </div>
 
                 <div className="account-card-body">
-                  {/* Alerta de Desfase de la Cuenta Maestra */}
-                  {(() => {
-                    const clientesDesfasados = (cta.perfiles || [])
-                      .map(p => clientesPorPerfil[p.id])
-                      .filter(cli => cli && cli.fechaVencimiento && cta.fechaCorte && (cli.fechaVencimiento > cta.fechaCorte));
-
-                    if (clientesDesfasados.length === 0) return null;
-
-                    return (
-                      <div style={{
-                        background: 'rgba(245, 158, 11, 0.12)',
-                        border: '1px solid rgba(245, 158, 11, 0.45)',
-                        borderRadius: '8px',
-                        padding: '8px 12px',
-                        fontSize: '0.78rem',
-                        color: '#fef08a',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginBottom: '12px'
-                      }}>
-                        <AlertTriangle size={15} style={{ color: '#fbbf24', flexShrink: 0 }} />
-                        <span>
-                          <strong style={{ color: '#fbbf24' }}>Alerta de Corte:</strong> {clientesDesfasados.length} {clientesDesfasados.length === 1 ? 'cliente asignado vence' : 'clientes asignados vencen'} después del corte ({formatearFecha(cta.fechaCorte)}). Renueva esta cuenta maestra a tiempo.
-                        </span>
-                      </div>
-                    );
-                  })()}
-
                   {/* Credenciales de la cuenta */}
                   <div className="credential-box">
                     {/* Correo */}
@@ -455,7 +427,7 @@ export function AccountsView({
                             <Calendar size={13} /> Vencimiento:
                           </span>
                           <div style={{ textAlign: 'right' }}>
-                            <span style={{ fontSize: '0.82rem', color: '#f8fafc', fontWeight: 600 }}>
+                            <span style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 600 }}>
                               {formatearFecha(cta.fechaCorte)}
                             </span>
                             <div style={{ marginTop: '2px' }}>
@@ -502,7 +474,7 @@ export function AccountsView({
                         <span>Costo Mensual:</span>
                       </span>
                       <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.82rem', color: '#38bdf8', fontWeight: 600 }}>
+                        <span className="account-cost-val">
                           S/ {Number(cta.costo || 0).toFixed(2)}
                         </span>
                         {cta.renovaciones > 0 && (
@@ -540,23 +512,8 @@ export function AccountsView({
                   <div style={{ marginTop: '12px' }}>
                     <button
                       type="button"
-                      className="profile-accordion-btn"
+                      className={`profile-accordion-btn ${isExpanded ? 'expanded' : ''}`}
                       onClick={() => toggleExpand(cta.id)}
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '10px 14px',
-                        borderRadius: 'var(--radius-md)',
-                        background: isExpanded ? 'rgba(99, 102, 241, 0.16)' : 'rgba(255, 255, 255, 0.04)',
-                        border: '1px solid ' + (isExpanded ? 'rgba(99, 102, 241, 0.45)' : 'var(--border-subtle)'),
-                        color: isExpanded ? '#c7d2fe' : 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        fontSize: '0.82rem',
-                        fontWeight: 600,
-                        transition: 'all 0.2s ease'
-                      }}
                       title={isExpanded ? 'Ocultar pantallas de esta cuenta' : 'Desplegar pantallas y perfiles de esta cuenta'}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -597,7 +554,7 @@ export function AccountsView({
                               {porcentaje}%
                             </span>
                           </div>
-                          <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div className="account-progress-track">
                             <div
                               style={{
                                 width: `${porcentaje}%`,
@@ -612,7 +569,7 @@ export function AccountsView({
 
                         {/* Lista de Pantallas / Perfiles */}
                         <div>
-                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '8px' }}>
+                          <span className="account-profiles-label">
                             Perfiles ({perfiles.length}):
                           </span>
                           <div className="profiles-list">
@@ -648,7 +605,7 @@ export function AccountsView({
                                         👤 {clienteAsignado.nombre}
                                       </div>
                                       <div style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
-                                        <span>{clienteAsignado.celular}</span>
+                                        <span className="profile-client-phone-text">{clienteAsignado.celular}</span>
                                         <button
                                           type="button"
                                           onClick={() => onOpenWhatsApp(clienteAsignado, p, cta)}
@@ -678,7 +635,7 @@ export function AccountsView({
                                             ) : dCli <= 2 ? (
                                               <span style={{ color: '#fbbf24' }}>⚠️ Vence en {dCli} días</span>
                                             ) : (
-                                              <span style={{ color: '#94a3b8' }}>Vence en {dCli} días</span>
+                                              <span className="profile-client-validity-text">Vence en {dCli} días</span>
                                             )}
                                           </div>
                                         );
@@ -688,16 +645,8 @@ export function AccountsView({
                                     <div style={{ marginTop: '6px' }}>
                                       <button
                                         type="button"
-                                        className="btn btn-secondary"
+                                        className="btn btn-secondary btn-assign-slot"
                                         onClick={() => onAssignProfile(cta.id, p.id)}
-                                        style={{
-                                          width: '100%',
-                                          padding: '4px 6px',
-                                          fontSize: '0.72rem',
-                                          borderColor: 'rgba(16, 185, 129, 0.4)',
-                                          color: '#6ee7b7',
-                                          background: 'rgba(16, 185, 129, 0.1)'
-                                        }}
                                       >
                                         <UserPlus size={12} />
                                         <span>+ Asignar</span>

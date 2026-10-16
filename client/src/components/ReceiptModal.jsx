@@ -352,7 +352,7 @@ export function ReceiptModal({
                 >
                   {platformInfo.name}
                 </span>
-                <span style={{ fontWeight: 700, fontSize: '1rem', color: '#f8fafc', marginLeft: '10px' }}>
+                <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)', marginLeft: '10px' }}>
                   {perfilNombre}
                 </span>
               </div>

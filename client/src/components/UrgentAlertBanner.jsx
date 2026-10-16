@@ -25,7 +25,7 @@ export function UrgentAlertBanner({ urgentClients = [], onActionClick }) {
         className="btn btn-whatsapp urgent-action-btn" 
         onClick={onActionClick}
       >
-        <WhatsAppIcon size={18} color="#063c19" />
+        <WhatsAppIcon size={18} color="#ffffff" />
         <span className="hide-on-mobile">Gestionar y Enviar WhatsApp</span>
         <span className="show-on-mobile">Enviar WhatsApp ({urgentClients.length})</span>
         <ArrowRight size={15} />

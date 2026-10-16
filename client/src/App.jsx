@@ -24,8 +24,7 @@ import {
   addDays, 
   getTodayDate,
   actualizarPlantillasGuardadas,
-  formatearFecha,
-  verificarDesfase
+  formatearFecha
 } from './utils/storage';
 import {
   isSupabaseConfigured,
@@ -57,6 +56,34 @@ export default function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
+
+  // Tema Claro / Oscuro con persistencia en localStorage
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem('flowstream_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('flowstream_theme', theme);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    document.documentElement.classList.add('no-transitions');
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    setTimeout(() => {
+      document.documentElement.classList.remove('no-transitions');
+    }, 60);
+  };
 
   // PWA: Soporte para instalación en pantalla de inicio de celular/computadora
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -170,13 +197,6 @@ export default function App() {
     return d >= 0 && d <= 2;
   });
 
-  // Clientes con riesgo de desfase con su cuenta maestra
-  const desfaseTotalCount = clientes.filter(cli => {
-    const cta = cuentas.find(c => String(c.id) === String(cli.cuentaId));
-    if (!cta) return false;
-    return verificarDesfase(cta.fechaCorte, cli.fechaVencimiento).tieneDesfase;
-  }).length;
-
   // 1. Guardar Nuevo Cliente y marcar su perfil como 'asignado'
   const handleSaveClient = async (nuevoCliente) => {
     let clientToSave = nuevoCliente;
@@ -263,10 +283,9 @@ export default function App() {
       return { ...prev, clientes: updatedClientes };
     });
 
-    // Detectar cuenta y perfil para WhatsApp y verificación de desfase
+    // Detectar cuenta y perfil para WhatsApp
     const cta = cuentas.find(c => String(c.id) === String(cli.cuentaId));
     const prf = cta?.perfiles?.find(p => String(p.id) === String(cli.perfilId));
-    const desfase = verificarDesfase(cta?.fechaCorte, nuevaFechaVencimiento);
 
     toast.success(
       `¡Membresía renovada hasta el ${formatearFecha(nuevaFechaVencimiento)}! (+30 días)`,
@@ -279,16 +298,6 @@ export default function App() {
         }
       }
     );
-
-    if (desfase.tieneDesfase) {
-      setTimeout(() => {
-        toast.warning(
-          `La cuenta maestra vence el ${formatearFecha(cta.fechaCorte)} (${desfase.diasDiferencia} días antes que este cliente). ¡Recuerda renovar la cuenta maestra!`,
-          '⚠️ Atención: Riesgo de Desfase',
-          { duration: 8000 }
-        );
-      }, 400);
-    }
   };
 
   // 2.1. Abrir Modal de Edición de Cliente
@@ -579,15 +588,13 @@ export default function App() {
         clientCount={clientes.length}
         urgentCount={urgentClients.length}
         accountCount={cuentas.length}
-        desfaseCount={desfaseTotalCount}
         isCloudConnected={isCloudConnected}
-        onOpenDatabase={() => setIsDatabaseOpen(true)}
-        isInstallable={isInstallable}
-        onInstallPWA={handleInstallPWA}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Área Principal de Contenido */}
@@ -797,7 +804,6 @@ export default function App() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         urgentCount={urgentClients.length}
-        desfaseCount={desfaseTotalCount}
       />
     </div>
   );

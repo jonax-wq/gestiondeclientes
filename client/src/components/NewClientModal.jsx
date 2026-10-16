@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, UserPlus, Phone, KeyRound, Calendar, Check, AlertCircle, AlertTriangle } from 'lucide-react';
 import { COUNTRY_CODES, PLATFORMS } from '../constants/platforms';
-import { getTodayDate, addDays, formatearFecha, generarId, verificarDesfase } from '../utils/storage';
+import { getTodayDate, addDays, formatearFecha, generarId } from '../utils/storage';
 
 export function NewClientModal({ 
   isOpen, 
@@ -361,37 +361,6 @@ export function NewClientModal({
                 <strong>Membresía activa por 30 días.</strong> Finalizará el <strong>{formatearFecha(fechaVencimiento)}</strong>. El sistema te alertará automáticamente con un icono de WhatsApp cuando le falten 2 días.
               </span>
             </div>
-
-            {/* Alerta de Riesgo de Desfase */}
-            {(() => {
-              const desfase = verificarDesfase(cuentaActual?.fechaCorte, fechaVencimiento);
-              if (!desfase.tieneDesfase) return null;
-              return (
-                <div style={{
-                  background: 'rgba(245, 158, 11, 0.12)',
-                  border: '1px solid rgba(245, 158, 11, 0.45)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '10px 14px',
-                  fontSize: '0.82rem',
-                  color: '#fef08a',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '10px',
-                  marginTop: '10px'
-                }}>
-                  <AlertTriangle size={18} style={{ color: '#fbbf24', flexShrink: 0, marginTop: '2px' }} />
-                  <div>
-                    <strong style={{ color: '#fbbf24', display: 'block', marginBottom: '2px' }}>
-                      ⚠️ Alerta de Riesgo de Desfase:
-                    </strong>
-                    <span>
-                      La cuenta maestra vencerá el <strong>{formatearFecha(cuentaActual.fechaCorte)}</strong> ({desfase.diasDiferencia} días antes que este cliente). 
-                      Recuerda que deberás renovar la cuenta maestra oportunamente para que este perfil no sufra corte de servicio.
-                    </span>
-                  </div>
-                </div>
-              );
-            })()}
 
             {/* Notas opcionales */}
             <div className="form-group">

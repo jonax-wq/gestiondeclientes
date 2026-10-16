@@ -23,22 +23,11 @@ export function Navbar({
         </button>
 
         {/* Logo oficial de Flow Stream */}
-        <div className="brand-logo-container" style={{ width: '38px', height: '38px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="brand-logo-container">
           <img
             src="/flow_logo.png"
             alt="Flow Stream Logo"
             className="brand-logo-img"
-            style={{
-              width: '38px',
-              height: '38px',
-              maxWidth: '38px',
-              maxHeight: '38px',
-              borderRadius: '10px',
-              objectFit: 'cover',
-              border: '1px solid rgba(99, 102, 241, 0.45)',
-              boxShadow: '0 0 14px rgba(99, 102, 241, 0.4)',
-              display: 'block'
-            }}
           />
         </div>
 

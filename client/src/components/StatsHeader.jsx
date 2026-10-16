@@ -65,7 +65,7 @@ export function StatsHeader({
       >
         <div className="stat-info">
           <span className="stat-label">Clientes Activos</span>
-          <span className="stat-value">{clientesActivos}</span>
+          <span className="stat-value stat-val-emerald">{clientesActivos}</span>
           <span className="stat-subtext">Membresías al día</span>
         </div>
         <div className="stat-icon emerald">
@@ -75,20 +75,16 @@ export function StatsHeader({
 
       {/* Por Vencer (≤ 2 Días) - REQUERIMIENTO PRINCIPAL */}
       <div 
-        className={`stat-card ${porVencer2Dias > 0 ? 'pulse-amber' : ''}`}
+        className={`stat-card ${porVencer2Dias > 0 ? 'card-urgent pulse-amber' : ''}`}
         onClick={() => { onSelectTab('clientes'); onSelectFilter('por_vencer'); }}
-        style={{ 
-          cursor: 'pointer',
-          borderColor: porVencer2Dias > 0 ? 'rgba(245, 158, 11, 0.4)' : undefined,
-          background: porVencer2Dias > 0 ? 'rgba(245, 158, 11, 0.08)' : undefined
-        }}
+        style={{ cursor: 'pointer' }}
         title="Ver clientes que vencen en 2 días o menos para enviar WhatsApp"
       >
         <div className="stat-info">
-          <span className="stat-label" style={{ color: porVencer2Dias > 0 ? '#fde047' : undefined }}>
+          <span className={`stat-label ${porVencer2Dias > 0 ? 'stat-lbl-amber' : ''}`}>
             Por Vencer (≤ 2 Días)
           </span>
-          <span className="stat-value" style={{ color: porVencer2Dias > 0 ? '#fbbf24' : undefined }}>
+          <span className={`stat-value ${porVencer2Dias > 0 ? 'stat-val-amber' : ''}`}>
             {porVencer2Dias}
           </span>
           <span className="stat-subtext">Avisar por WhatsApp</span>
@@ -107,7 +103,7 @@ export function StatsHeader({
       >
         <div className="stat-info">
           <span className="stat-label">Clientes Vencidos</span>
-          <span className="stat-value" style={{ color: vencidos > 0 ? '#fb7185' : undefined }}>
+          <span className={`stat-value ${vencidos > 0 ? 'stat-val-rose' : ''}`}>
             {vencidos}
           </span>
           <span className="stat-subtext">Requieren renovación</span>
@@ -126,7 +122,7 @@ export function StatsHeader({
       >
         <div className="stat-info">
           <span className="stat-label">Perfiles Disponibles</span>
-          <span className="stat-value" style={{ color: '#38bdf8' }}>
+          <span className="stat-value stat-val-cyan">
             {perfilesDisponibles}
           </span>
           <span className="stat-subtext">{perfilesOcupados} de {totalPerfiles} ocupados</span>
@@ -140,7 +136,7 @@ export function StatsHeader({
       <div className="stat-card">
         <div className="stat-info">
           <span className="stat-label">Ganancia Neta</span>
-          <span className="stat-value" style={{ color: gananciaNeta >= 0 ? '#34d399' : '#f87171' }}>
+          <span className={`stat-value ${gananciaNeta >= 0 ? 'stat-val-emerald' : 'stat-val-rose'}`}>
             S/ {gananciaNeta.toFixed(2)}
           </span>
           <span className="stat-subtext">Ingresos: S/ {totalRecaudado.toFixed(2)} | Costos: S/ {totalCostoCuentas.toFixed(2)}</span>

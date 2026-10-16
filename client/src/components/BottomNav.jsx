@@ -1,11 +1,10 @@
 import React from 'react';
-import { Users, Tv, KeyRound, Globe, Bell, AlertTriangle } from 'lucide-react';
+import { Users, Tv, KeyRound, Globe, Bell } from 'lucide-react';
 
 export function BottomNav({
   activeTab,
   onSelectTab,
-  urgentCount = 0,
-  desfaseCount = 0
+  urgentCount = 0
 }) {
   const tabs = [
     {
@@ -20,8 +19,6 @@ export function BottomNav({
       id: 'cuentas',
       label: 'Cuentas',
       icon: Tv,
-      badge: desfaseCount > 0 ? desfaseCount : null,
-      badgeType: 'warning',
       color: '#06b6d4'
     },
     {

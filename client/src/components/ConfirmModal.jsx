@@ -72,13 +72,13 @@ export function ConfirmModal({
           {getIcon()}
         </div>
 
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#f8fafc', marginBottom: '8px' }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
           {title}
         </h3>
 
         <div style={{ 
           fontSize: '0.88rem', 
-          color: '#94a3b8', 
+          color: 'var(--text-secondary)', 
           lineHeight: '1.5', 
           marginBottom: '24px',
           whiteSpace: 'pre-line'

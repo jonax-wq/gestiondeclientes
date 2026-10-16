@@ -155,7 +155,7 @@ export function CustomerPortalView({
 
       {/* Buscador de Cliente por WhatsApp / Celular */}
       <div className="portal-search-box">
-        <label className="form-label" style={{ fontWeight: 600, color: '#f8fafc' }}>
+        <label className="form-label" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
           📱 Consulta de Membresía (Ingresa el número de WhatsApp o Nombre del Cliente):
         </label>
         <div className="portal-input-wrapper">

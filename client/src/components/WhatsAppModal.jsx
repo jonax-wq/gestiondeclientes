@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  MessageSquare, 
-  Send, 
-  Copy, 
-  Check, 
-  ExternalLink, 
-  Phone, 
-  Calendar, 
-  Shield, 
+import {
+  X,
+  MessageSquare,
+  Send,
+  Copy,
+  Check,
+  ExternalLink,
+  Phone,
+  Calendar,
+  Shield,
   Sparkles,
   Save,
   RotateCcw
 } from 'lucide-react';
-import { 
-  generarPlantillaWhatsApp, 
-  construirEnlaceWhatsApp, 
-  calcularDiasRestantes, 
+import {
+  generarPlantillaWhatsApp,
+  construirEnlaceWhatsApp,
+  calcularDiasRestantes,
   formatearFecha,
   guardarPlantillaCustom,
   restaurarPlantillaDefecto
@@ -26,14 +26,14 @@ import { PLATFORMS } from '../constants/platforms';
 import { WhatsAppIcon, WhatsAppBadgeIcon } from './icons/WhatsAppIcon';
 import { useToast } from '../context/ToastContext';
 
-export function WhatsAppModal({ 
-  cliente, 
-  perfil, 
-  cuenta, 
-  isOpen, 
-  onClose, 
+export function WhatsAppModal({
+  cliente,
+  perfil,
+  cuenta,
+  isOpen,
+  onClose,
   onMarkSent,
-  initialTemplate = null 
+  initialTemplate = null
 }) {
   const toast = useToast();
   const [tipoPlantilla, setTipoPlantilla] = useState(initialTemplate || 'recordatorio_2dias');
@@ -149,7 +149,7 @@ export function WhatsAppModal({
           }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <span 
+                <span
                   className="platform-pill"
                   style={{
                     backgroundColor: platformInfo.badgeBg,
@@ -208,28 +208,28 @@ export function WhatsAppModal({
           <div className="form-group">
             <label className="form-label">Seleccionar Plantilla de Mensaje:</label>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button 
+              <button
                 type="button"
                 className={`pill-btn ${tipoPlantilla === 'recordatorio_2dias' ? 'active' : ''}`}
                 onClick={() => handleCambiarPlantilla('recordatorio_2dias')}
               >
                 🔔 Recordatorio (2 Días)
               </button>
-              <button 
+              <button
                 type="button"
                 className={`pill-btn ${tipoPlantilla === 'vence_hoy' ? 'active' : ''}`}
                 onClick={() => handleCambiarPlantilla('vence_hoy')}
               >
                 🔥 Vence Hoy
               </button>
-              <button 
+              <button
                 type="button"
                 className={`pill-btn ${tipoPlantilla === 'entrega_cuenta' ? 'active' : ''}`}
                 onClick={() => handleCambiarPlantilla('entrega_cuenta')}
               >
                 🎉 Entrega de Datos
               </button>
-              <button 
+              <button
                 type="button"
                 className={`pill-btn ${tipoPlantilla === 'gracias_renovacion' ? 'active' : ''}`}
                 onClick={() => handleCambiarPlantilla('gracias_renovacion')}
@@ -237,7 +237,7 @@ export function WhatsAppModal({
               >
                 ⭐ Gracias por Renovar
               </button>
-              <button 
+              <button
                 type="button"
                 className={`pill-btn ${tipoPlantilla === 'vencido' ? 'active' : ''}`}
                 onClick={() => handleCambiarPlantilla('vencido')}
@@ -252,7 +252,7 @@ export function WhatsAppModal({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
               <label className="form-label">Mensaje a Enviar (puedes editarlo):</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button 
+                <button
                   type="button"
                   onClick={handleGuardarPlantilla}
                   style={{
@@ -275,7 +275,7 @@ export function WhatsAppModal({
                   <span>{guardadoExitoso ? '¡Plantilla Guardada!' : '💾 Guardar Plantilla'}</span>
                 </button>
 
-                <button 
+                <button
                   type="button"
                   onClick={handleRestaurarDefecto}
                   style={{
@@ -294,7 +294,7 @@ export function WhatsAppModal({
                   <span>Restaurar</span>
                 </button>
 
-                <button 
+                <button
                   type="button"
                   onClick={handleCopiarMensaje}
                   style={{
@@ -313,7 +313,7 @@ export function WhatsAppModal({
                 </button>
               </div>
             </div>
-            <textarea 
+            <textarea
               className="form-textarea"
               rows={6}
               value={mensajeTexto}
@@ -419,11 +419,11 @@ export function WhatsAppModal({
             </span>
             <div className="wa-bubble">
               {mensajeTexto}
-              <div style={{ 
-                fontSize: '0.68rem', 
-                color: '#8696a0', 
-                textAlign: 'right', 
-                marginTop: '6px' 
+              <div style={{
+                fontSize: '0.68rem',
+                color: '#8696a0',
+                textAlign: 'right',
+                marginTop: '6px'
               }}>
                 Ahora ✓✓
               </div>
@@ -436,8 +436,8 @@ export function WhatsAppModal({
           <button className="btn btn-secondary" onClick={onClose}>
             Cancelar
           </button>
-          <button 
-            className="btn btn-whatsapp" 
+          <button
+            className="btn btn-whatsapp"
             onClick={handleEnviarWhatsApp}
             style={{ padding: '10px 22px', fontSize: '0.95rem' }}
           >
