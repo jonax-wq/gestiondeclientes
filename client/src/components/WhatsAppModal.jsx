@@ -136,17 +136,7 @@ export function WhatsAppModal({
         {/* Cuerpo */}
         <div className="modal-body">
           {/* Tarjeta resumen del cliente y servicio */}
-          <div style={{
-            background: 'rgba(15, 23, 42, 0.7)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '12px'
-          }}>
+          <div className="modal-summary-card">
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <span
@@ -159,12 +149,12 @@ export function WhatsAppModal({
                 >
                   {platformInfo.name}
                 </span>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>
+                <span className="modal-summary-title">
                   {perfil ? perfil.nombre : 'Perfil asignado'}
                 </span>
                 <span className="pin-badge">PIN: {cliente.pin || 'Sin PIN'}</span>
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Phone size={14} /> {cliente.codigoPais} {cliente.celular}
                 </span>
@@ -335,16 +325,8 @@ export function WhatsAppModal({
                 <button
                   key={v.tag}
                   type="button"
+                  className="var-chip-btn"
                   onClick={() => handleInsertarVariable(v.tag)}
-                  style={{
-                    background: 'rgba(99, 102, 241, 0.15)',
-                    border: '1px solid rgba(99, 102, 241, 0.3)',
-                    color: '#c7d2fe',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    fontSize: '0.72rem',
-                    cursor: 'pointer'
-                  }}
                   title={`Insertar ${v.tag} en el mensaje`}
                 >
                   {v.label}
@@ -353,19 +335,8 @@ export function WhatsAppModal({
             </div>
 
             {/* Barra de acción destacada para guardar plantilla para todos */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '8px',
-              marginTop: '8px',
-              padding: '8px 12px',
-              background: 'rgba(30, 41, 59, 0.6)',
-              border: '1px solid rgba(99, 102, 241, 0.25)',
-              borderRadius: '8px'
-            }}>
-              <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>
+            <div className="modal-callout-box">
+              <span className="modal-callout-text">
                 ¿Deseas que este texto sea la plantilla fija para todos los clientes?
               </span>
               <button

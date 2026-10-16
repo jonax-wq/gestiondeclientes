@@ -501,18 +501,9 @@ export function ClientsView({
                     </div>
 
                     {/* Fechas de inicio y fin */}
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      fontSize: '0.76rem', 
-                      color: 'var(--text-secondary)',
-                      background: 'var(--bg-input)',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      marginTop: '6px'
-                    }}>
+                    <div className="mobile-card-dates-row">
                       <span>Inicio: <strong>{formatearFecha(cli.fechaInicio)}</strong></span>
-                      <span>Vence (30d): <strong style={{ color: 'var(--text-primary)' }}>{formatearFecha(cli.fechaVencimiento)}</strong></span>
+                      <span>Vence (30d): <strong>{formatearFecha(cli.fechaVencimiento)}</strong></span>
                     </div>
                   </div>
 
@@ -538,7 +529,6 @@ export function ClientsView({
                         className="btn btn-secondary mobile-sub-btn receipt"
                         onClick={() => onOpenReceipt && onOpenReceipt(cli, perfilInfo, cuentaInfo)}
                         title="Emitir Comprobante Digital"
-                        style={{ borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38bdf8' }}
                       >
                         <Receipt size={14} />
                         <span>Recibo</span>
@@ -556,7 +546,7 @@ export function ClientsView({
 
                       <button
                         type="button"
-                        className="btn btn-secondary mobile-sub-btn"
+                        className="btn btn-secondary mobile-sub-btn renew"
                         onClick={() => onRenewClient(cli.id)}
                         title="Renovar membresía por 30 días más"
                       >

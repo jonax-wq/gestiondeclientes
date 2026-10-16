@@ -246,20 +246,21 @@ export function EditClientModal({
               <div className="form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <label className="form-label">Fecha de Vencimiento:</label>
-                  <button 
-                    type="button"
-                    onClick={handleSumar30Dias}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#60a5fa',
-                      fontSize: '0.72rem',
-                      cursor: 'pointer',
-                      padding: 0
-                    }}
-                  >
-                    +30 días
-                  </button>
+                    <button 
+                      type="button"
+                      onClick={handleSumar30Dias}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--primary)',
+                        fontWeight: 600,
+                        fontSize: '0.72rem',
+                        cursor: 'pointer',
+                        padding: 0
+                      }}
+                    >
+                      +30 días
+                    </button>
                 </div>
                 <input 
                   type="date"

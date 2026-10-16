@@ -51,7 +51,7 @@ export function Pagination({
 
         {onItemsPerPageChange && (
           <div className="pagination-size-selector">
-            <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Por pág:</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Por pág:</span>
             <select
               className="pagination-select"
               value={itemsPerPage}

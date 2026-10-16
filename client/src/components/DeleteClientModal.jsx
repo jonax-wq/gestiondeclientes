@@ -41,8 +41,8 @@ export function DeleteClientModal({
               <UserMinus size={20} />
             </div>
             <div>
-              <h2 className="modal-title" style={{ color: '#fecaca' }}>Dar de Baja Cliente</h2>
-              <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+              <h2 className="modal-title modal-title-danger">Dar de Baja Cliente</h2>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 Liberar pantalla y finalizar membresía
               </p>
             </div>
@@ -55,34 +55,18 @@ export function DeleteClientModal({
         {/* Cuerpo */}
         <div className="modal-body" style={{ gap: '16px' }}>
           {/* Alerta de confirmación */}
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.35)',
-            borderRadius: 'var(--radius-md)',
-            padding: '14px 16px',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px'
-          }}>
-            <AlertTriangle size={20} style={{ color: '#f87171', flexShrink: 0, marginTop: '2px' }} />
-            <div style={{ fontSize: '0.85rem', color: '#fecaca', lineHeight: '1.45' }}>
+          <div className="delete-alert-box">
+            <AlertTriangle size={20} style={{ color: '#ef4444', flexShrink: 0, marginTop: '2px' }} />
+            <div>
               <strong>¿Estás seguro de que deseas desvincular a este cliente?</strong>
-              <div style={{ marginTop: '4px', color: '#cbd5e1' }}>
+              <div className="delete-alert-sub">
                 La pantalla quedará disponible inmediatamente para que puedas asignársela a un nuevo cliente.
               </div>
             </div>
           </div>
 
           {/* Ficha Resumen del Cliente a dar de baja */}
-          <div style={{
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-md)',
-            padding: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px'
-          }}>
+          <div className="modal-summary-card" style={{ flexDirection: 'column', gap: '10px', alignItems: 'stretch' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
               <div>
                 <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>

@@ -1542,6 +1542,104 @@ h1, h2, h3, h4, h5, h6 {
   border-color: rgba(244, 63, 94, 0.4);
 }
 
+.mobile-card-dates-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-top: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.modal-summary-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.modal-summary-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #ffffff;
+}
+
+.var-chip-btn {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #c7d2fe;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.var-chip-btn:hover {
+  background: rgba(99, 102, 241, 0.25);
+  color: #ffffff;
+}
+
+.modal-callout-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 8px;
+}
+
+.modal-callout-text {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+}
+
+.info-alert-banner {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: #c7d2fe;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.delete-alert-box {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: #fecaca;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.delete-alert-sub {
+  margin-top: 4px;
+  color: #cbd5e1;
+}
+
+.modal-title-danger {
+  color: #fecaca;
+}
+
 /* Para pantallas intermedias / laptops con zoom, asegurar que la navbar siempre quede en una sola fila */
 @media (max-width: 1180px) and (min-width: 769px) {
   .navbar {
@@ -1746,7 +1844,8 @@ h1, h2, h3, h4, h5, h6 {
     padding: 4px !important;
     gap: 6px !important;
     border-radius: var(--radius-md) !important;
-    background: rgba(15, 23, 42, 0.85) !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
     box-sizing: border-box;
   }
 
@@ -5820,27 +5919,39 @@ h1, h2, h3, h4, h5, h6 {
 /* ====================================================================
    VISTA MÓVIL EN MODO CLARO
    ==================================================================== */
-[data-theme="light"] .mobile-bottom-nav,
-[data-theme="light"] .bottom-nav {
-  background: rgba(255, 255, 255, 0.98);
-  border-top: 1.5px solid #cbd5e1;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+[data-theme="light"] .view-tabs {
+  background: #f1f5f9 !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
-[data-theme="light"] .bottom-nav-item {
-  color: #475569;
+[data-theme="light"] .tab-btn {
+  color: #475569 !important;
   font-weight: 600;
 }
 
-[data-theme="light"] .bottom-nav-item.active {
-  color: #4f46e5;
-  font-weight: 800;
+[data-theme="light"] .tab-btn:hover {
+  color: #0f172a !important;
+  background: #e2e8f0;
 }
 
+[data-theme="light"] .tab-btn.active {
+  background: #ffffff !important;
+  color: #4338ca !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  border: 1.5px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .filter-pills::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+}
+
+/* Tarjetas Móviles de Clientes */
 [data-theme="light"] .client-mobile-card {
-  background: #ffffff;
-  border: 1.5px solid #cbd5e1;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05) !important;
 }
 
 [data-theme="light"] .client-mobile-card h4 {
@@ -5848,7 +5959,258 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 800;
 }
 
-[data-theme="light"] .sidebar-mobile-backdrop {
-  background: rgba(15, 23, 42, 0.5);
+[data-theme="light"] .client-mobile-card.card-urgent {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fef9c3 100%) !important;
+  border: 2px solid #f59e0b !important;
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.22) !important;
 }
+
+[data-theme="light"] .client-mobile-card.card-expired {
+  background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 50%, #fecdd3 100%) !important;
+  border: 2px solid #f43f5e !important;
+  box-shadow: 0 4px 18px rgba(244, 63, 94, 0.15) !important;
+}
+
+[data-theme="light"] .mobile-card-header {
+  border-bottom: 1.5px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .mobile-card-dates-row {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .mobile-card-dates-row strong {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .mobile-sub-btn {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #334155 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .mobile-sub-btn.receipt {
+  color: #0284c7 !important;
+  border-color: #7dd3fc !important;
+  background: #f0f9ff !important;
+}
+
+[data-theme="light"] .mobile-sub-btn.receipt:hover {
+  background: #e0f2fe !important;
+}
+
+[data-theme="light"] .mobile-sub-btn.edit {
+  color: #4338ca !important;
+  border-color: #c7d2fe !important;
+  background: #eef2ff !important;
+}
+
+[data-theme="light"] .mobile-sub-btn.edit:hover {
+  background: #e0e7ff !important;
+}
+
+[data-theme="light"] .mobile-sub-btn.renew {
+  color: #047857 !important;
+  border-color: #a7f3d0 !important;
+  background: #ecfdf5 !important;
+}
+
+[data-theme="light"] .mobile-sub-btn.renew:hover {
+  background: #d1fae5 !important;
+}
+
+[data-theme="light"] .mobile-sub-btn.delete {
+  color: #be123c !important;
+  border-color: #fecdd3 !important;
+  background: #fff1f2 !important;
+}
+
+[data-theme="light"] .mobile-sub-btn.delete:hover {
+  background: #ffe4e6 !important;
+}
+
+[data-theme="light"] .mobile-wa-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+  border: none !important;
+}
+
+/* Navbar y Header móvil */
+[data-theme="light"] .navbar-mobile-toggle-btn {
+  background: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+[data-theme="light"] .navbar-mobile-toggle-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Barra inferior móvil */
+[data-theme="light"] .mobile-bottom-nav,
+[data-theme="light"] .bottom-nav {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-top: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .bottom-nav-item {
+  color: #64748b !important;
+  font-weight: 600;
+}
+
+[data-theme="light"] .bottom-nav-item.active {
+  color: var(--active-color, #4f46e5) !important;
+  font-weight: 800;
+}
+
+[data-theme="light"] .bottom-nav-label {
+  color: inherit !important;
+  font-weight: 700;
+}
+
+[data-theme="light"] .bottom-nav-badge.urgent {
+  background: #f59e0b !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4) !important;
+}
+
+/* Sidebar Drawer en móvil */
+[data-theme="light"] .app-sidebar {
+  background: #ffffff !important;
+  box-shadow: 20px 0 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .sidebar-mobile-backdrop {
+  background: rgba(15, 23, 42, 0.4) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+[data-theme="light"] .sidebar-mobile-close-btn {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .sidebar-mobile-close-btn:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Comprobante / Recibo digital */
+[data-theme="light"] .receipt-card-preview {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .receipt-top-bar {
+  border-bottom: 1.5px dashed #cbd5e1 !important;
+}
+
+[data-theme="light"] .receipt-top-bar span {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .receipt-service-row {
+  background: #f8fafc !important;
+  border: 1.5px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .receipt-detail-label {
+  color: #64748b !important;
+  font-weight: 700;
+}
+
+[data-theme="light"] .receipt-detail-value {
+  color: #0f172a !important;
+  font-weight: 800;
+}
+
+[data-theme="light"] .receipt-detail-value.highlight-expiry {
+  color: #d97706 !important;
+}
+
+[data-theme="light"] .receipt-guarantee-box {
+  background: #f0fdf4 !important;
+  border: 1.5px solid #86efac !important;
+  color: #166534 !important;
+}
+
+[data-theme="light"] .ticket-notch {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .ticket-line {
+  border-top-color: #cbd5e1 !important;
+}
+
+/* Modales y utilidades */
+[data-theme="light"] .modal-summary-card {
+  background: #f8fafc !important;
+  border: 1.5px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .modal-summary-title {
+  color: #0f172a !important;
+  font-weight: 800;
+}
+
+[data-theme="light"] .var-chip-btn {
+  background: #eef2ff !important;
+  border: 1px solid #c7d2fe !important;
+  color: #4338ca !important;
+  font-weight: 600;
+}
+
+[data-theme="light"] .var-chip-btn:hover {
+  background: #e0e7ff !important;
+  border-color: #818cf8 !important;
+}
+
+[data-theme="light"] .modal-callout-box {
+  background: #f1f5f9 !important;
+  border: 1.5px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .modal-callout-text {
+  color: #334155 !important;
+  font-weight: 600;
+}
+
+[data-theme="light"] .info-alert-banner {
+  background: #eef2ff !important;
+  border: 1.5px solid #c7d2fe !important;
+  color: #3730a3 !important;
+}
+
+[data-theme="light"] .info-alert-banner strong {
+  color: #1e1b4b !important;
+}
+
+[data-theme="light"] .delete-alert-box {
+  background: #fef2f2 !important;
+  border: 1.5px solid #fecaca !important;
+  color: #991b1b !important;
+}
+
+[data-theme="light"] .delete-alert-sub {
+  color: #7f1d1d !important;
+}
+
+[data-theme="light"] .modal-title-danger {
+  color: #b91c1c !important;
+}
+
+[data-theme="light"] .sql-code-box {
+  background: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0369a1 !important;
+}
+
 

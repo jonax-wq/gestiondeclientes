@@ -345,17 +345,7 @@ export function NewClientModal({
             </div>
 
             {/* Banner recordatorio de los 30 días */}
-            <div style={{
-              background: 'rgba(99, 102, 241, 0.1)',
-              border: '1px solid rgba(99, 102, 241, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              padding: '10px 14px',
-              fontSize: '0.82rem',
-              color: '#c7d2fe',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
+            <div className="info-alert-banner">
               <span>⚡</span>
               <span>
                 <strong>Membresía activa por 30 días.</strong> Finalizará el <strong>{formatearFecha(fechaVencimiento)}</strong>. El sistema te alertará automáticamente con un icono de WhatsApp cuando le falten 2 días.
