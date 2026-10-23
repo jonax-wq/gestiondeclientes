@@ -219,13 +219,26 @@ export function AccountsView({
                     boxShadow: isSelected ? `0 0 12px ${platInfo.borderColor || '#6366f1'}33` : undefined
                   }}
                 >
-                  <span style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    backgroundColor: platInfo.color || '#6366f1',
-                    display: 'inline-block'
-                  }} />
+                  {platInfo.logo ? (
+                    <img
+                      src={platInfo.logo}
+                      alt=""
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        objectFit: 'cover',
+                        borderRadius: '3px'
+                      }}
+                    />
+                  ) : (
+                    <span style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: platInfo.color || '#6366f1',
+                      display: 'inline-block'
+                    }} />
+                  )}
                   <span>{platInfo.name || platKey}</span>
                   <span 
                     className="counter-badge"
@@ -324,18 +337,50 @@ export function AccountsView({
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span
-                      className="platform-pill"
-                      data-platform={platformInfo.id}
-                      style={{
-                        backgroundColor: platformInfo.badgeBg,
-                        color: platformInfo.textColor,
-                        borderColor: platformInfo.borderColor,
-                        fontSize: '0.88rem'
-                      }}
-                    >
-                      {platformInfo.name}
-                    </span>
+                    {platformInfo.logo ? (
+                      <div
+                        className="account-card-logo-wrap"
+                        title={platformInfo.name}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'transparent',
+                          border: 'none',
+                          padding: 0,
+                          margin: 0,
+                          lineHeight: 0
+                        }}
+                      >
+                        <img
+                          src={platformInfo.logo}
+                          alt={platformInfo.name}
+                          style={{
+                            height: '34px',
+                            maxWidth: '85px',
+                            objectFit: 'contain',
+                            borderRadius: '6px',
+                            display: 'block',
+                            border: 'none',
+                            outline: 'none',
+                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)'
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <span
+                        className="platform-pill"
+                        data-platform={platformInfo.id}
+                        style={{
+                          backgroundColor: platformInfo.badgeBg,
+                          color: platformInfo.textColor,
+                          borderColor: platformInfo.borderColor,
+                          fontSize: '0.88rem'
+                        }}
+                      >
+                        {platformInfo.name}
+                      </span>
+                    )}
                     <span className="account-card-header-subtext">
                       {ocupados}/{total} pantallas ocupadas
                     </span>

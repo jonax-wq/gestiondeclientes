@@ -8,15 +8,20 @@ import { ClientsView } from './components/ClientsView';
 import { AccountsView } from './components/AccountsView';
 import { CodesView } from './components/CodesView';
 import { CustomerPortalView } from './components/CustomerPortalView';
+import { DistributorsView } from './components/DistributorsView';
 import { DatabaseModal } from './components/DatabaseModal';
 import { NewClientModal } from './components/NewClientModal';
 import { EditClientModal } from './components/EditClientModal';
 import { DeleteClientModal } from './components/DeleteClientModal';
 import { NewAccountModal } from './components/NewAccountModal';
 import { EditAccountModal } from './components/EditAccountModal';
+import { NewDistributorModal } from './components/NewDistributorModal';
 import { WhatsAppModal } from './components/WhatsAppModal';
 import { ReceiptModal } from './components/ReceiptModal';
 import { ConfirmModal } from './components/ConfirmModal';
+import { AdminLockScreen } from './components/AdminLockScreen';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
+import { isSessionAuthenticated, logoutAdmin, getCurrentDistributor } from './utils/auth';
 import { 
   cargarDatos, 
   guardarDatos, 
@@ -39,9 +44,14 @@ import {
   renovarClienteEnSupabase,
   eliminarClienteEnSupabase,
   marcarWhatsAppEnviadoEnSupabase,
-  vaciarTodoEnSupabase
+  vaciarTodoEnSupabase,
+  obtenerDistribuidoresDesdeSupabase,
+  crearDistribuidorEnSupabase,
+  actualizarDistribuidorEnSupabase,
+  renovarDistribuidorEnSupabase,
+  eliminarDistribuidorEnSupabase
 } from './utils/supabaseClient';
-import { Users, Tv, KeyRound, Globe } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 import { useToast } from './context/ToastContext';
 
 export default function App() {
@@ -49,8 +59,34 @@ export default function App() {
   const [data, setData] = useState(() => cargarDatos());
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [isLoadingCloud, setIsLoadingCloud] = useState(isSupabaseConfigured);
-  const [activeTab, setActiveTab] = useState('clientes'); // 'clientes' | 'cuentas' | 'codigos' | 'portal'
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tab') === 'portal' || window.location.hash === '#portal') {
+        return 'portal';
+      }
+    } catch (e) {}
+    return 'clientes';
+  });
   const [clientFilter, setClientFilter] = useState('todos'); // 'todos' | 'por_vencer' | 'activos' | 'vencidos'
+
+  // Distribuidor Activo en Sesión y SuperAdmin
+  const [currentDistributor, setCurrentDistributor] = useState(() => getCurrentDistributor());
+  const isSuperAdmin = Boolean(currentDistributor?.es_superadmin) || currentDistributor?.codigo_distribuidor === 'DIST-2026';
+
+  // Lista de distribuidores (para SuperAdmin)
+  const [distribuidores, setDistribuidores] = useState([]);
+  const [isNewDistributorOpen, setIsNewDistributorOpen] = useState(false);
+
+  // Autenticación de Administrador (Contraseña Maestra / PIN)
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => isSessionAuthenticated());
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+
+  const handleLockAdmin = () => {
+    logoutAdmin();
+    setIsAdminAuthenticated(false);
+    toast.info('Panel de administración bloqueado.');
+  };
 
   // Estados de interfaz y Sidebar
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -136,37 +172,25 @@ export default function App() {
     };
   }, []);
 
-  const handleInstallPWA = async () => {
-    if (!deferredPrompt) {
-      toast.info(
-        '• En Android (Chrome): Toca el menú de 3 puntos y selecciona "Agregar a la pantalla principal".\n• En iPhone (Safari): Toca el botón Compartir y selecciona "Agregar al inicio".',
-        '📱 Instalar en Pantalla de Inicio',
-        { duration: 8000 }
-      );
-      return;
-    }
-    try {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setIsInstallable(false);
-      }
-      setDeferredPrompt(null);
-    } catch (err) {
-      console.error('Error al solicitar instalación PWA:', err);
-    }
-  };
-
-  // Cargar datos desde Supabase en el arranque si las credenciales están configuradas
+  // Cargar datos desde Supabase en el arranque o cambio de distribuidor
   useEffect(() => {
     async function initSupabase() {
       if (isSupabaseConfigured) {
         setIsLoadingCloud(true);
         try {
-          const cloudData = await cargarDatosDesdeSupabase();
+          const distCode = currentDistributor?.codigo_distribuidor || 'DIST-2026';
+          const cloudData = await cargarDatosDesdeSupabase(distCode, isSuperAdmin);
           if (cloudData) {
             setData(cloudData);
             setIsCloudConnected(true);
+          }
+
+          // Cargar distribuidores si es SuperAdmin
+          if (isSuperAdmin) {
+            const distList = await obtenerDistribuidoresDesdeSupabase();
+            if (distList && distList.length > 0) {
+              setDistribuidores(distList);
+            }
           }
 
           // Sincronizar plantillas de WhatsApp desde la nube
@@ -182,7 +206,7 @@ export default function App() {
       }
     }
     initSupabase();
-  }, []);
+  }, [currentDistributor?.codigo_distribuidor, isSuperAdmin]);
 
   // Guardar en localStorage ante cualquier cambio (como respaldo y caché)
   useEffect(() => {
@@ -197,12 +221,136 @@ export default function App() {
     return d >= 0 && d <= 2;
   });
 
-  // 1. Guardar Nuevo Cliente y marcar su perfil como 'asignado'
-  const handleSaveClient = async (nuevoCliente) => {
-    let clientToSave = nuevoCliente;
+  // ====================================================================
+  // HANDLERS DE DISTRIBUIDORES (SUPERADMIN)
+  // ====================================================================
+
+  const handleSaveDistributor = async (distData, sendWhatsApp = true) => {
+    let saved = distData;
     if (isCloudConnected) {
       try {
-        const guardado = await guardarClienteEnSupabase(nuevoCliente);
+        const res = await crearDistribuidorEnSupabase(distData);
+        if (res) saved = res;
+      } catch (err) {
+        console.error('Error creando distribuidor en Supabase:', err);
+        toast.error('Error guardando distribuidor en la nube.');
+        return;
+      }
+    }
+
+    setDistribuidores(prev => [saved, ...prev]);
+    toast.success(`¡Distribuidor ${saved.nombre} (${saved.codigo_distribuidor}) registrado exitosamente!`);
+
+    if (sendWhatsApp && saved.whatsapp) {
+      const rawPhone = saved.whatsapp.replace(/\D/g, '');
+      const appUrl = window.location.origin;
+      const dias = saved.fecha_expiracion ? calcularDiasRestantes(saved.fecha_expiracion) : null;
+      const expiracionTexto = saved.fecha_expiracion 
+        ? `${formatearFecha(saved.fecha_expiracion)} (${dias >= 0 ? `en ${dias} días` : 'Vencido'})`
+        : 'Permanente (Sin límite)';
+
+      const mensaje = `👋 ¡Hola *${saved.nombre}*! Te saluda el Administrador de *Flow Stream*.
+
+Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
+
+🌐 *Enlace del sistema:* ${appUrl}
+🔑 *Tu Código de Distribuidor:* *${saved.codigo_distribuidor}*
+📅 *Vigencia de tu licencia:* ${expiracionTexto}
+
+📲 *Instrucciones de ingreso:*
+1. Abre el enlace arriba en tu celular o computadora.
+2. Ingresa tu código *${saved.codigo_distribuidor}* en la pantalla de acceso.
+3. ¡Listo! Podrás gestionar tus cuentas de streaming, clientes y generar mensajes de WhatsApp directos.
+
+¡Muchos éxitos con tus ventas! 🍿🎬`;
+
+      const waLink = `https://wa.me/${rawPhone}?text=${encodeURIComponent(mensaje)}`;
+      window.open(waLink, '_blank');
+    }
+  };
+
+  const handleRenewDistributor = async (dist) => {
+    if (isCloudConnected) {
+      try {
+        const res = await renovarDistribuidorEnSupabase(dist.id, 30);
+        if (res) {
+          setDistribuidores(prev => prev.map(d => d.id === dist.id ? res : d));
+          toast.success(`Distribuidor ${dist.nombre} renovado +30 días (hasta ${formatearFecha(res.fecha_expiracion)})`);
+          return;
+        }
+      } catch (err) {
+        console.error('Error renovando distribuidor en Supabase:', err);
+      }
+    }
+
+    const nuevaFecha = addDays(dist.fecha_expiracion || getTodayDate(), 30);
+    setDistribuidores(prev => prev.map(d => d.codigo_distribuidor === dist.codigo_distribuidor ? { ...d, fecha_expiracion: nuevaFecha, estado: 'activo' } : d));
+    toast.success(`Distribuidor renovado hasta ${formatearFecha(nuevaFecha)}`);
+  };
+
+  const handleToggleStatusDistributor = async (dist) => {
+    const nuevoEstado = dist.estado === 'suspendido' ? 'activo' : 'suspendido';
+    if (isCloudConnected) {
+      try {
+        await actualizarDistribuidorEnSupabase(dist.id, { estado: nuevoEstado });
+      } catch (err) {
+        console.error('Error actualizando estado en Supabase:', err);
+      }
+    }
+
+    setDistribuidores(prev => prev.map(d => (d.id === dist.id || d.codigo_distribuidor === dist.codigo_distribuidor) ? { ...d, estado: nuevoEstado } : d));
+    toast.info(`Distribuidor ${dist.nombre} ahora está ${nuevoEstado.toUpperCase()}`);
+  };
+
+  const handleDeleteDistributor = (dist) => {
+    setConfirmModal({
+      isOpen: true,
+      title: '¿Eliminar Distribuidor?',
+      message: `¿Estás seguro de que deseas eliminar al distribuidor ${dist.nombre} (${dist.codigo_distribuidor})?\n\nPerderá el acceso al sistema inmediatamente.`,
+      confirmText: 'Sí, Eliminar Distribuidor',
+      variant: 'danger',
+      onConfirm: async () => {
+        if (isCloudConnected) {
+          try {
+            await eliminarDistribuidorEnSupabase(dist.id);
+          } catch (err) {
+            console.error('Error eliminando en Supabase:', err);
+          }
+        }
+        setDistribuidores(prev => prev.filter(d => d.codigo_distribuidor !== dist.codigo_distribuidor));
+        toast.info(`Distribuidor ${dist.nombre} eliminado.`);
+      }
+    });
+  };
+
+  const handleUpdateDistributor = async (distId, updates) => {
+    if (isCloudConnected) {
+      try {
+        const res = await actualizarDistribuidorEnSupabase(distId, updates);
+        if (res) {
+          setDistribuidores(prev => prev.map(d => (d.id === distId || d.codigo_distribuidor === distId) ? res : d));
+          return res;
+        }
+      } catch (err) {
+        console.error('Error actualizando distribuidor en Supabase:', err);
+      }
+    }
+
+    setDistribuidores(prev => prev.map(d => (d.id === distId || d.codigo_distribuidor === distId) ? { ...d, ...updates } : d));
+  };
+
+  // ====================================================================
+  // HANDLERS DE CLIENTES Y CUENTAS
+  // ====================================================================
+
+  // 1. Guardar Nuevo Cliente
+  const handleSaveClient = async (nuevoCliente) => {
+    let clientToSave = nuevoCliente;
+    const distCode = currentDistributor?.codigo_distribuidor || 'DIST-2026';
+
+    if (isCloudConnected) {
+      try {
+        const guardado = await guardarClienteEnSupabase(nuevoCliente, distCode);
         if (guardado) clientToSave = guardado;
       } catch (err) {
         console.error('Error guardando cliente en Supabase:', err);
@@ -210,7 +358,6 @@ export default function App() {
     }
 
     setData(prev => {
-      // Actualizar perfil en la cuenta correspondiente
       const updatedCuentas = prev.cuentas.map(cta => {
         if (String(cta.id) === String(clientToSave.cuentaId)) {
           const updatedPerfiles = (cta.perfiles || []).map(p => {
@@ -238,7 +385,6 @@ export default function App() {
 
     toast.success(`¡Cliente ${clientToSave.nombre} asignado con éxito!`, 'Asignación Exitosa');
 
-    // Abrir automáticamente el modal de WhatsApp para entregar los accesos al cliente
     const cta = cuentas.find(c => String(c.id) === String(clientToSave.cuentaId));
     const prf = cta?.perfiles?.find(p => String(p.id) === String(clientToSave.perfilId));
     setWhatsAppSelection({
@@ -250,7 +396,7 @@ export default function App() {
     setIsWhatsAppOpen(true);
   };
 
-  // 2. Renovar Membresía de Cliente (+30 Días y suma ingreso)
+  // 2. Renovar Membresía de Cliente (+30 Días)
   const handleRenewClient = async (clienteId) => {
     const cli = clientes.find(c => String(c.id) === String(clienteId));
     if (!cli) return;
@@ -283,7 +429,6 @@ export default function App() {
       return { ...prev, clientes: updatedClientes };
     });
 
-    // Detectar cuenta y perfil para WhatsApp
     const cta = cuentas.find(c => String(c.id) === String(cli.cuentaId));
     const prf = cta?.perfiles?.find(p => String(p.id) === String(cli.perfilId));
 
@@ -306,7 +451,7 @@ export default function App() {
     setIsEditClientOpen(true);
   };
 
-  // 2.2. Actualizar datos de un cliente existente y sincronizar perfiles
+  // 2.2. Actualizar datos de un cliente existente
   const handleUpdateClient = async (clienteActualizado, perfilAnteriorId) => {
     if (isCloudConnected) {
       try {
@@ -319,7 +464,6 @@ export default function App() {
     setData(prev => {
       let updatedCuentas = prev.cuentas;
 
-      // Si se reasignó de perfil, liberar el perfil anterior y asignar el nuevo
       if (perfilAnteriorId && String(perfilAnteriorId) !== String(clienteActualizado.perfilId)) {
         updatedCuentas = updatedCuentas.map(cta => {
           const updatedPerfiles = (cta.perfiles || []).map(p => {
@@ -334,7 +478,6 @@ export default function App() {
           return { ...cta, perfiles: updatedPerfiles };
         });
       } else {
-        // Si el perfil es el mismo, asegurar que el PIN se sincronice en el perfil de la cuenta
         updatedCuentas = updatedCuentas.map(cta => {
           if (String(cta.id) === String(clienteActualizado.cuentaId)) {
             const updatedPerfiles = (cta.perfiles || []).map(p => {
@@ -364,7 +507,7 @@ export default function App() {
     setIsDeleteClientOpen(true);
   };
 
-  // 3.1. Confirmar baja del cliente y LIBERAR su pantalla en las cuentas
+  // 3.1. Confirmar baja del cliente
   const handleConfirmDeleteClient = async (clienteId, perfilId) => {
     if (isCloudConnected) {
       try {
@@ -375,7 +518,6 @@ export default function App() {
     }
 
     setData(prev => {
-      // Liberar el perfil en las cuentas maestras
       const updatedCuentas = prev.cuentas.map(cta => {
         const updatedPerfiles = (cta.perfiles || []).map(p => {
           if (String(p.id) === String(perfilId) || String(p.clienteId) === String(clienteId)) {
@@ -396,9 +538,11 @@ export default function App() {
   // 4. Guardar Nueva Cuenta Completa
   const handleSaveAccount = async (nuevaCuenta) => {
     let cuentaToSave = nuevaCuenta;
+    const distCode = currentDistributor?.codigo_distribuidor || 'DIST-2026';
+
     if (isCloudConnected) {
       try {
-        const guardada = await guardarCuentaEnSupabase(nuevaCuenta);
+        const guardada = await guardarCuentaEnSupabase(nuevaCuenta, distCode);
         if (guardada) cuentaToSave = guardada;
       } catch (err) {
         console.error('Error guardando cuenta en Supabase:', err);
@@ -410,10 +554,10 @@ export default function App() {
       cuentas: [cuentaToSave, ...prev.cuentas]
     }));
 
-    toast.success(`¡Cuenta maestra ${cuentaToSave.plataforma} registrada con éxito!`, 'Cuenta Creada');
+    toast.success(`Cuenta de ${cuentaToSave.plataforma} agregada con éxito`, 'Cuenta Creada');
   };
 
-  // 4.1. Abrir Modal de Edición de Cuenta Maestra
+  // 4.1. Abrir Modal de Edición de Cuenta
   const handleOpenEditAccount = (cuenta) => {
     setAccountToEdit(cuenta);
     setIsEditAccountOpen(true);
@@ -430,38 +574,23 @@ export default function App() {
     }
 
     setData(prev => {
-      const updatedCuentas = prev.cuentas.map(cta => 
-        String(cta.id) === String(cuentaActualizada.id) ? cuentaActualizada : cta
+      const updatedCuentas = prev.cuentas.map(c => 
+        String(c.id) === String(cuentaActualizada.id) ? cuentaActualizada : c
       );
       return { ...prev, cuentas: updatedCuentas };
     });
 
-    toast.success('Cuenta maestra actualizada con éxito');
+    toast.success(`Cuenta de ${cuentaActualizada.plataforma} actualizada correctamente`, 'Cambios Guardados');
   };
 
-  // 4.3. Renovar Cuenta Maestra (+30 Días de corte mensual y descuenta de ganancia)
-  const handleRenewAccount = (cuentaId) => {
-    const cta = cuentas.find(c => String(c.id) === String(cuentaId));
-    if (!cta) return;
-    const costoFormateado = Number(cta.costo || 0).toFixed(2);
-
-    setConfirmModal({
-      isOpen: true,
-      title: '¿Renovar Cuenta Maestra?',
-      message: `¿Deseas renovar el corte de ${cta.plataforma} (${cta.correo}) por 30 días más?\n\n• Se extenderá la fecha de corte 30 días.\n• Se registrará el costo mensual de S/ ${costoFormateado} (descontado de tu Ganancia Neta).`,
-      confirmText: 'Sí, Renovar (+30d)',
-      variant: 'primary',
-      onConfirm: () => ejecutarRenovacionCuenta(cuentaId)
-    });
-  };
-
-  const ejecutarRenovacionCuenta = async (cuentaId) => {
+  // 4.3. Renovar Cuenta Maestra (+30 Días)
+  const handleRenewAccount = async (cuentaId) => {
     const cta = cuentas.find(c => String(c.id) === String(cuentaId));
     if (!cta) return;
 
     const hoy = getTodayDate();
     const diasRestantes = calcularDiasRestantes(cta.fechaCorte);
-    const fechaBase = diasRestantes < 0 ? hoy : (cta.fechaCorte || hoy);
+    const fechaBase = diasRestantes < 0 ? hoy : cta.fechaCorte;
     const nuevaFechaCorte = addDays(fechaBase, 30);
     const nuevasRenovaciones = (cta.renovaciones || 0) + 1;
 
@@ -579,6 +708,86 @@ export default function App() {
     setData({ cuentas: [], clientes: [] });
   };
 
+  // 0. Si el usuario no está autenticado y está intentando acceder a los módulos de administración:
+  if (!isAdminAuthenticated && activeTab !== 'portal') {
+    return (
+      <div className="app-root lock-screen-active">
+        <AdminLockScreen 
+          onUnlock={(dist) => {
+            if (dist) setCurrentDistributor(dist);
+            setIsAdminAuthenticated(true);
+            toast.success(`¡Acceso concedido! Bienvenido, ${dist?.nombre || 'Administrador'}.`);
+          }}
+          onGoToPortal={() => {
+            setActiveTab('portal');
+          }}
+        />
+      </div>
+    );
+  }
+
+  // 0.1 Si el usuario es un cliente navegando en el portal de autoservicio sin autenticación admin:
+  if (!isAdminAuthenticated && activeTab === 'portal') {
+    return (
+      <div className="app-root customer-portal-standalone">
+        <header className="standalone-portal-header">
+          <div className="brand-wrapper">
+            <div className="brand-logo-container">
+              <img src="/flow_logo.png" alt="Flow Stream Logo" className="brand-logo-img" />
+            </div>
+            <div className="brand-text-container">
+              <div className="brand-title">
+                <span>Flow Stream</span>
+                <span className="brand-badge-mini" style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#a855f7', border: '1px solid rgba(139, 92, 246, 0.4)' }}>CLIENTES</span>
+              </div>
+              <p className="brand-subtitle">Portal de Auto-Servicio y Consulta de Membresías</p>
+            </div>
+          </div>
+
+          <div className="portal-header-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={handleToggleTheme}
+              title="Cambiar tema claro/oscuro"
+            >
+              {theme === 'dark' ? '☀️ Modo Claro' : '🌙 Modo Oscuro'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => setActiveTab('clientes')}
+              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', boxShadow: '0 0 12px rgba(139, 92, 246, 0.35)' }}
+              title="Acceso restringido para el Administrador del CRM"
+            >
+              <KeyRound size={15} />
+              <span>Acceso Admin 🔐</span>
+            </button>
+          </div>
+        </header>
+
+        <main className="standalone-portal-main">
+          <CustomerPortalView 
+            clientes={clientes}
+            cuentas={cuentas}
+            onOpenReceipt={handleOpenReceipt}
+            onOpenWhatsApp={handleOpenWhatsApp}
+            onGoToAdmin={() => setActiveTab('clientes')}
+            isAdminAuthenticated={false}
+          />
+        </main>
+
+        <ReceiptModal
+          isOpen={isReceiptOpen}
+          onClose={() => setIsReceiptOpen(false)}
+          cliente={receiptSelection.cliente}
+          perfil={receiptSelection.perfil}
+          cuenta={receiptSelection.cuenta}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={`app-root ${isSidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
       {/* Barra Lateral Profesional Responsiva */}
@@ -588,6 +797,8 @@ export default function App() {
         clientCount={clientes.length}
         urgentCount={urgentClients.length}
         accountCount={cuentas.length}
+        distributorCount={distribuidores.length}
+        currentDistributor={currentDistributor}
         isCloudConnected={isCloudConnected}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -595,6 +806,9 @@ export default function App() {
         onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
         theme={theme}
         onToggleTheme={handleToggleTheme}
+        onOpenDatabase={() => setIsDatabaseOpen(true)}
+        onLockAdmin={handleLockAdmin}
+        onOpenChangePassword={() => setIsChangePasswordOpen(true)}
       />
 
       {/* Área Principal de Contenido */}
@@ -608,6 +822,7 @@ export default function App() {
             onFilterUrgent={() => { setActiveTab('clientes'); setClientFilter('por_vencer'); }}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
             onGoToCodes={() => setActiveTab('codigos')}
+            onLockAdmin={handleLockAdmin}
           />
 
           {/* 2. Banner de Alerta Urgente (≤ 2 Días) */}
@@ -626,46 +841,6 @@ export default function App() {
             />
           )}
 
-          {/* 4. Selector de Pestañas Principales */}
-          <div className="tabs-header-container">
-            <div className="view-tabs">
-              <button 
-                className={`tab-btn ${activeTab === 'clientes' ? 'active' : ''}`}
-                onClick={() => setActiveTab('clientes')}
-              >
-                <Users size={17} />
-                <span>Clientes ({clientes.length})</span>
-              </button>
-
-              <button 
-                className={`tab-btn ${activeTab === 'cuentas' ? 'active' : ''}`}
-                onClick={() => setActiveTab('cuentas')}
-              >
-                <Tv size={17} />
-                <span>Cuentas ({cuentas.length})</span>
-              </button>
-
-              <button 
-                className={`tab-btn ${activeTab === 'codigos' ? 'active' : ''}`}
-                onClick={() => setActiveTab('codigos')}
-              >
-                <KeyRound size={17} />
-                <span>Códigos Hogar</span>
-              </button>
-
-              <button 
-                className={`tab-btn ${activeTab === 'portal' ? 'active' : ''}`}
-                onClick={() => setActiveTab('portal')}
-              >
-                <Globe size={17} />
-                <span>Portal Auto-Servicio</span>
-              </button>
-            </div>
-
-            <div className="tabs-duration-hint">
-              <span>Membresía: <strong>30 días</strong></span>
-            </div>
-          </div>
 
           {/* 5. Vistas de Contenido */}
           {activeTab === 'clientes' && (
@@ -703,12 +878,25 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'distribuidores' && isSuperAdmin && (
+            <DistributorsView 
+              distribuidores={distribuidores}
+              onNewDistributor={() => setIsNewDistributorOpen(true)}
+              onRenewDistributor={handleRenewDistributor}
+              onToggleStatusDistributor={handleToggleStatusDistributor}
+              onDeleteDistributor={handleDeleteDistributor}
+              onUpdateDistributor={handleUpdateDistributor}
+            />
+          )}
+
           {activeTab === 'portal' && (
             <CustomerPortalView 
               clientes={clientes}
               cuentas={cuentas}
               onOpenReceipt={handleOpenReceipt}
               onOpenWhatsApp={handleOpenWhatsApp}
+              onGoToAdmin={() => setActiveTab('clientes')}
+              isAdminAuthenticated={isAdminAuthenticated}
             />
           )}
 
@@ -738,13 +926,11 @@ export default function App() {
             isOpen={isDeleteClientOpen}
             onClose={() => setIsDeleteClientOpen(false)}
             cliente={clientToDelete}
-            cuenta={cuentas.find(c => c.id === clientToDelete?.cuentaId)}
-            perfil={cuentas.find(c => c.id === clientToDelete?.cuentaId)?.perfiles?.find(p => p.id === clientToDelete?.perfilId)}
+            cuentas={cuentas}
             onConfirmDelete={handleConfirmDeleteClient}
           />
 
           <NewAccountModal 
-            key={isNewAccountOpen ? 'acct-modal-open' : 'acct-modal-closed'}
             isOpen={isNewAccountOpen}
             onClose={() => setIsNewAccountOpen(false)}
             onSaveAccount={handleSaveAccount}
@@ -757,6 +943,13 @@ export default function App() {
             onUpdateAccount={handleUpdateAccount}
           />
 
+          {/* Modal Nuevo Distribuidor (SuperAdmin) */}
+          <NewDistributorModal
+            isOpen={isNewDistributorOpen}
+            onClose={() => setIsNewDistributorOpen(false)}
+            onSaveDistributor={handleSaveDistributor}
+          />
+
           <WhatsAppModal 
             isOpen={isWhatsAppOpen}
             onClose={() => setIsWhatsAppOpen(false)}
@@ -767,8 +960,7 @@ export default function App() {
             onMarkSent={handleMarkWhatsAppSent}
           />
 
-          {/* Modal de Comprobante / Recibo Digital */}
-          <ReceiptModal
+          <ReceiptModal 
             isOpen={isReceiptOpen}
             onClose={() => setIsReceiptOpen(false)}
             cliente={receiptSelection.cliente}
@@ -776,7 +968,6 @@ export default function App() {
             cuenta={receiptSelection.cuenta}
           />
 
-          {/* Modal de Base de Datos y Respaldo SQL */}
           <DatabaseModal
             isOpen={isDatabaseOpen}
             onClose={() => setIsDatabaseOpen(false)}
@@ -786,7 +977,11 @@ export default function App() {
             onClearAllData={handleClearAllData}
           />
 
-          {/* Modal de Confirmación Estilizado */}
+          <ChangePasswordModal
+            isOpen={isChangePasswordOpen}
+            onClose={() => setIsChangePasswordOpen(false)}
+          />
+
           <ConfirmModal
             isOpen={confirmModal.isOpen}
             onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
@@ -799,11 +994,11 @@ export default function App() {
         </div>
       </div>
 
-      {/* Barra de Navegación Inferior Fija para Móviles (Bottom Bar Táctil) */}
       <BottomNav 
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         urgentCount={urgentClients.length}
+        isSuperAdmin={isSuperAdmin}
       />
     </div>
   );

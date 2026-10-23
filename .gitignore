@@ -23,6 +23,8 @@ server/imap_config.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+database/backup_actual.json
+database/migracion_completa_con_datos_y_distribuidores.sql
 
 # Editores y SO
 .vscode/

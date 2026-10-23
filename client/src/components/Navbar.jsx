@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserPlus, PlusCircle, Bell, Menu, KeyRound } from 'lucide-react';
+import { UserPlus, PlusCircle, Bell, Menu, KeyRound, Lock } from 'lucide-react';
 
 export function Navbar({
   onNewClient,
@@ -7,7 +7,8 @@ export function Navbar({
   urgentCount,
   onFilterUrgent,
   onToggleMobileSidebar,
-  onGoToCodes
+  onGoToCodes,
+  onLockAdmin
 }) {
   return (
     <header className="navbar">
@@ -34,7 +35,6 @@ export function Navbar({
         <div className="brand-text-container">
           <div className="brand-title">
             <span>Flow Stream</span>
-            <span className="brand-badge">PRO</span>
           </div>
           <p className="brand-subtitle">
             Gestión Inteligente de Cuentas de Streaming
@@ -88,6 +88,19 @@ export function Navbar({
           <span className="hide-on-mobile">+ Asignar Cliente</span>
           <span className="show-on-mobile">+ Cliente</span>
         </button>
+
+        {/* Bloquear Sistema / Cerrar Sesión Admin */}
+        {onLockAdmin && (
+          <button
+            type="button"
+            className="btn btn-secondary nav-lock-btn"
+            onClick={onLockAdmin}
+            title="Bloquear sistema (Cerrar sesión de administrador)"
+          >
+            <Lock size={16} />
+            <span className="hide-on-mobile">Bloquear</span>
+          </button>
+        )}
       </div>
     </header>
   );

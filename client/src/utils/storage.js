@@ -570,12 +570,13 @@ export function extraerCodigoDeTexto(rawText) {
   // 3. Extracción de códigos según modo o detección inteligente
   let codigo = '';
   let tipo = 'login_code';
+  const cleanDigits = (str) => (str ? str.replace(/\s+/g, '') : '');
 
-  // Detección de patrones específicos
-  const netflixHogarRegex = /(?:c[oó]digo(?: de confirmaci[oó]n| para actualizar| de acceso)?(?:\s+es)?(?:\s*:)?|\bhogar\b[^\d]{1,20})\s*(\d{4})\b/i;
+  // Detección de patrones específicos (soportando números con espacios como "0 2 5 4 0 6")
+  const netflixHogarRegex = /(?:c[oó]digo(?: de confirmaci[oó]n| para actualizar| de acceso)?(?:\s+es)?(?:\s*:)?|\bhogar\b[^\d]{1,20})\s*(\d(?:\s*\d){3})\b/i;
   const matchNetflix = text.match(netflixHogarRegex);
 
-  const otp6Regex = /(?:c[oó]digo|otp|passcode|one-time code|c[oó]digo de un solo uso|c[oó]digo de 6 d[ií]gitos)[^\d]{1,25}(\d{6})\b/i;
+  const otp6Regex = /(?:c[oó]digo|otp|passcode|one-time code|c[oó]digo de un solo uso|c[oó]digo de 6 d[ií]gitos|verificaci[oó]n)[^\d]{1,25}(\d(?:\s*\d){5})\b/i;
   const matchOtp6 = text.match(otp6Regex);
 
   const resetPassRegex = /(?:restablecer|cambiar|reset|recuperar|actualizar)\s+(?:tu\s+)?contrase[ñn]a/i;
@@ -586,22 +587,31 @@ export function extraerCodigoDeTexto(rawText) {
 
   if (isReset) {
     tipo = 'reset_password';
-    if (matchOtp6) codigo = matchOtp6[1];
-    else if (matchNetflix) codigo = matchNetflix[1];
+    if (matchOtp6) codigo = cleanDigits(matchOtp6[1]);
+    else if (matchNetflix) codigo = cleanDigits(matchNetflix[1]);
   } else if (isTravel) {
     tipo = 'travel_mode';
-    if (matchNetflix) codigo = matchNetflix[1];
-    else if (matchOtp6) codigo = matchOtp6[1];
+    if (matchNetflix) codigo = cleanDigits(matchNetflix[1]);
+    else if (matchOtp6) codigo = cleanDigits(matchOtp6[1]);
   } else if (matchNetflix || lower.includes('hogar') || (enlace && enlace.includes('update-primary-location'))) {
     tipo = 'update_household';
-    if (matchNetflix) codigo = matchNetflix[1];
+    if (matchNetflix) codigo = cleanDigits(matchNetflix[1]);
   } else if (matchOtp6) {
-    codigo = matchOtp6[1];
+    codigo = cleanDigits(matchOtp6[1]);
     tipo = 'otp_6_digits';
   } else {
-    // Si no coincide con palabras clave, buscar por longitud
+    // Si no coincide con palabras clave, buscar patrones aislados (con o sin espacios)
+    const spaced6 = text.match(/\b(\d\s+\d\s+\d\s+\d\s+\d\s+\d)\b/);
+    const spaced4 = text.match(/\b(\d\s+\d\s+\d\s+\d)\b/);
     const soloNumeros = text.replace(/[^0-9]/g, '');
-    if (soloNumeros.length === 4) {
+
+    if (spaced6) {
+      codigo = cleanDigits(spaced6[1]);
+      tipo = 'otp_6_digits';
+    } else if (spaced4) {
+      codigo = cleanDigits(spaced4[1]);
+      tipo = 'update_household';
+    } else if (soloNumeros.length === 4) {
       codigo = soloNumeros;
       tipo = 'update_household';
     } else if (soloNumeros.length === 6) {

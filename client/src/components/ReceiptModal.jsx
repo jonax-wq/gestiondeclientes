@@ -185,7 +185,7 @@ export function ReceiptModal({
 
     ctx.font = '12px "Segoe UI", sans-serif';
     ctx.fillStyle = '#475569';
-    ctx.fillText('Sistema Flow Stream PRO • Comprobante Digital Verificado', width / 2, 1005);
+    ctx.fillText('Sistema Flow Stream • Comprobante Digital Verificado', width / 2, 1005);
 
     return canvas;
   }, [cliente, folio, fechaHoy, fechaIni, fechaVenc, nombreCliente, perfilNombre, pin, platformInfo, precio]);

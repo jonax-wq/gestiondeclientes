@@ -15,39 +15,60 @@ export const supabase = isSupabaseConfigured
   : null;
 
 /**
- * Carga todas las cuentas y clientes desde Supabase
+ * Carga las cuentas y clientes desde Supabase, filtrando por el código de distribuidor si aplica.
+ * @param {string} distribuidorCodigo - Código DIST-XXXX del distribuidor actual
+ * @param {boolean} isSuperAdmin - Si es SuperAdmin puede ver todos o su propio lote
  */
-export async function cargarDatosDesdeSupabase() {
+export async function cargarDatosDesdeSupabase(distribuidorCodigo = 'DIST-2026', isSuperAdmin = false) {
   if (!supabase) return null;
 
   try {
     // 1. Obtener cuentas maestras
-    const { data: cuentasData, error: errCuentas } = await supabase
+    let queryCuentas = supabase
       .from('cuentas_streaming')
       .select('*')
       .order('id', { ascending: false });
 
+    // Si no es SuperAdmin, aislar estrictamente por su código de distribuidor
+    if (!isSuperAdmin && distribuidorCodigo) {
+      queryCuentas = queryCuentas.eq('distribuidor_codigo', distribuidorCodigo);
+    }
+
+    const { data: cuentasData, error: errCuentas } = await queryCuentas;
     if (errCuentas) throw errCuentas;
 
-    // 2. Obtener perfiles
-    const { data: perfilesData, error: errPerfiles } = await supabase
-      .from('perfiles')
-      .select('*')
-      .order('numero_perfil', { ascending: true });
+    // Si no hay cuentas, devolver vacío de inmediato
+    const cuentaIds = (cuentasData || []).map(c => c.id);
 
-    if (errPerfiles) throw errPerfiles;
+    // 2. Obtener perfiles de las cuentas filtradas
+    let perfilesData = [];
+    if (cuentaIds.length > 0) {
+      const { data: pData, error: errPerfiles } = await supabase
+        .from('perfiles')
+        .select('*')
+        .in('cuenta_id', cuentaIds)
+        .order('numero_perfil', { ascending: true });
+
+      if (errPerfiles) throw errPerfiles;
+      perfilesData = pData || [];
+    }
 
     // 3. Obtener clientes
-    const { data: clientesData, error: errClientes } = await supabase
+    let queryClientes = supabase
       .from('clientes')
       .select('*')
       .order('id', { ascending: false });
 
+    if (!isSuperAdmin && distribuidorCodigo) {
+      queryClientes = queryClientes.eq('distribuidor_codigo', distribuidorCodigo);
+    }
+
+    const { data: clientesData, error: errClientes } = await queryClientes;
     if (errClientes) throw errClientes;
 
     // Agrupar perfiles por cuenta_id
     const perfilesPorCuenta = {};
-    (perfilesData || []).forEach(p => {
+    perfilesData.forEach(p => {
       if (!perfilesPorCuenta[p.cuenta_id]) {
         perfilesPorCuenta[p.cuenta_id] = [];
       }
@@ -75,6 +96,7 @@ export async function cargarDatosDesdeSupabase() {
       notas: c.notas || '',
       renovaciones: c.renovaciones || 0,
       estado: c.estado || 'activa',
+      distribuidorCodigo: c.distribuidor_codigo || 'DIST-2026',
       perfiles: perfilesPorCuenta[c.id] || []
     }));
 
@@ -92,6 +114,7 @@ export async function cargarDatosDesdeSupabase() {
       fechaVencimiento: cli.fecha_vencimiento,
       precioCobrado: Number(cli.precio_cobrado) || 0,
       recordatorioEnviado: Boolean(cli.recordatorio_enviado),
+      distribuidorCodigo: cli.distribuidor_codigo || 'DIST-2026',
       notas: cli.notas || ''
     }));
 
@@ -105,11 +128,11 @@ export async function cargarDatosDesdeSupabase() {
 /**
  * Guarda una nueva cuenta completa con sus perfiles en Supabase
  */
-export async function guardarCuentaEnSupabase(nuevaCuenta) {
+export async function guardarCuentaEnSupabase(nuevaCuenta, distribuidorCodigo = 'DIST-2026') {
   if (!supabase) return null;
 
   try {
-    // 1. Insertar la cuenta maestra
+    // 1. Insertar la cuenta maestra con código de distribuidor
     const { data: cuentaCreada, error: errCta } = await supabase
       .from('cuentas_streaming')
       .insert({
@@ -120,7 +143,8 @@ export async function guardarCuentaEnSupabase(nuevaCuenta) {
         costo_cuenta: nuevaCuenta.costo || 0,
         cantidad_perfiles: nuevaCuenta.cantidadPerfiles || 5,
         proveedor: nuevaCuenta.proveedor || null,
-        notas: nuevaCuenta.notas || null
+        notas: nuevaCuenta.notas || null,
+        distribuidor_codigo: distribuidorCodigo || 'DIST-2026'
       })
       .select()
       .single();
@@ -143,10 +167,10 @@ export async function guardarCuentaEnSupabase(nuevaCuenta) {
 
     if (errPrf) throw errPrf;
 
-    // Retornar cuenta formateada con IDs asignados por la BD
     return {
       ...nuevaCuenta,
       id: cuentaCreada.id,
+      distribuidorCodigo: cuentaCreada.distribuidor_codigo,
       perfiles: (perfilesCreados || []).map(p => ({
         id: p.id,
         cuentaId: p.cuenta_id,
@@ -185,7 +209,6 @@ export async function actualizarCuentaEnSupabase(cuentaActualizada) {
 
     if (errCta) throw errCta;
 
-    // Actualizar nombres y pines de cada perfil
     if (cuentaActualizada.perfiles && cuentaActualizada.perfiles.length > 0) {
       for (const p of cuentaActualizada.perfiles) {
         if (p.id) {
@@ -253,7 +276,7 @@ export async function eliminarCuentaEnSupabase(cuentaId) {
 /**
  * Guarda un nuevo cliente y marca el perfil como asignado en Supabase
  */
-export async function guardarClienteEnSupabase(nuevoCliente) {
+export async function guardarClienteEnSupabase(nuevoCliente, distribuidorCodigo = 'DIST-2026') {
   if (!supabase) return null;
 
   try {
@@ -263,7 +286,7 @@ export async function guardarClienteEnSupabase(nuevoCliente) {
     const cuentaIdNum = nuevoCliente.cuentaId ? parseInt(nuevoCliente.cuentaId, 10) : null;
     const perfilIdNum = nuevoCliente.perfilId ? parseInt(nuevoCliente.perfilId, 10) : null;
 
-    // 1. Insertar el cliente
+    // 1. Insertar el cliente con distribuidor_codigo
     const { data: clienteCreado, error: errCli } = await supabase
       .from('clientes')
       .insert({
@@ -277,6 +300,7 @@ export async function guardarClienteEnSupabase(nuevoCliente) {
         fecha_inicio: nuevoCliente.fechaInicio,
         fecha_vencimiento: nuevoCliente.fechaVencimiento,
         precio_cobrado: Number(nuevoCliente.precioCobrado) || 0,
+        distribuidor_codigo: distribuidorCodigo || 'DIST-2026',
         notas: nuevoCliente.notas || null
       })
       .select()
@@ -301,6 +325,7 @@ export async function guardarClienteEnSupabase(nuevoCliente) {
       id: clienteCreado.id,
       cuentaId: clienteCreado.cuenta_id,
       perfilId: clienteCreado.perfil_id,
+      distribuidorCodigo: clienteCreado.distribuidor_codigo,
       celularCompleto
     };
   } catch (err) {
@@ -342,15 +367,12 @@ export async function actualizarClienteEnSupabase(clienteActualizado, perfilAnte
 
     if (errCli) throw errCli;
 
-    // Si cambió de perfil
     if (perfilAnteriorIdNum && perfilAnteriorIdNum !== perfilIdNum) {
-      // Liberar anterior
       await supabase
         .from('perfiles')
         .update({ estado: 'disponible', cliente_id: null })
         .eq('id', perfilAnteriorIdNum);
 
-      // Asignar nuevo
       if (perfilIdNum && !isNaN(perfilIdNum)) {
         await supabase
           .from('perfiles')
@@ -362,7 +384,6 @@ export async function actualizarClienteEnSupabase(clienteActualizado, perfilAnte
           .eq('id', perfilIdNum);
       }
     } else if (perfilIdNum && !isNaN(perfilIdNum)) {
-      // Actualizar PIN en el perfil
       await supabase
         .from('perfiles')
         .update({ pin: clienteActualizado.pin })
@@ -393,7 +414,6 @@ export async function renovarClienteEnSupabase(clienteId, nuevaFechaVencimiento,
 
     if (errCli) throw errCli;
 
-    // Registrar en historial_renovaciones
     await supabase
       .from('historial_renovaciones')
       .insert({
@@ -416,7 +436,6 @@ export async function eliminarClienteEnSupabase(clienteId, perfilId) {
   if (!supabase) return null;
 
   try {
-    // 1. Liberar el perfil
     if (perfilId) {
       await supabase
         .from('perfiles')
@@ -424,7 +443,6 @@ export async function eliminarClienteEnSupabase(clienteId, perfilId) {
         .eq('id', perfilId);
     }
 
-    // 2. Eliminar el cliente
     const { error } = await supabase
       .from('clientes')
       .delete()
@@ -484,7 +502,6 @@ export async function cargarPlantillasDesdeSupabase() {
       .select('*');
 
     if (error) {
-      console.warn('Tabla plantillas_whatsapp no encontrada en Supabase (usando local):', error.message);
       return null;
     }
 
@@ -528,3 +545,143 @@ export async function guardarPlantillaEnSupabase(tipo, contenido) {
   }
 }
 
+// ====================================================================
+// MÓDULO DE DISTRIBUIDORES (SUPERADMIN)
+// ====================================================================
+
+/**
+ * Obtiene la lista completa de distribuidores registrados
+ */
+export async function obtenerDistribuidoresDesdeSupabase() {
+  if (!supabase) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from('distribuidores')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (error) {
+      console.warn('Tabla distribuidores aún no disponible en Supabase:', error.message);
+      return [];
+    }
+    return data || [];
+  } catch (err) {
+    console.error('Error cargando distribuidores:', err);
+    return [];
+  }
+}
+
+/**
+ * Registra un nuevo distribuidor en Supabase
+ */
+export async function crearDistribuidorEnSupabase(distribuidor) {
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('distribuidores')
+      .insert({
+        codigo_distribuidor: distribuidor.codigo_distribuidor.toUpperCase().trim(),
+        nombre: distribuidor.nombre.trim(),
+        whatsapp: distribuidor.whatsapp ? distribuidor.whatsapp.trim() : null,
+        estado: distribuidor.estado || 'activo',
+        fecha_expiracion: distribuidor.fecha_expiracion || null,
+        es_superadmin: Boolean(distribuidor.es_superadmin),
+        max_cuentas: Number(distribuidor.max_cuentas) || 100,
+        precio_mensual: Number(distribuidor.precio_mensual) || 0,
+        notas: distribuidor.notas || null
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Error creando distribuidor en Supabase:', err);
+    throw err;
+  }
+}
+
+/**
+ * Actualiza los datos o estado de un distribuidor
+ */
+export async function actualizarDistribuidorEnSupabase(id, updates) {
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('distribuidores')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Error actualizando distribuidor en Supabase:', err);
+    throw err;
+  }
+}
+
+/**
+ * Renueva la fecha de expiración de un distribuidor agregando días
+ */
+export async function renovarDistribuidorEnSupabase(distribuidorId, dias = 30) {
+  if (!supabase) return null;
+
+  try {
+    // 1. Obtener distribuidor actual
+    const { data: dist, error: errFetch } = await supabase
+      .from('distribuidores')
+      .select('fecha_expiracion')
+      .eq('id', distribuidorId)
+      .single();
+
+    if (errFetch) throw errFetch;
+
+    const baseDate = dist.fecha_expiracion ? new Date(dist.fecha_expiracion + 'T00:00:00') : new Date();
+    const hoy = new Date();
+    const fechaReferencia = baseDate < hoy ? hoy : baseDate;
+    fechaReferencia.setDate(fechaReferencia.getDate() + dias);
+
+    const nuevaFecha = fechaReferencia.toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('distribuidores')
+      .update({
+        fecha_expiracion: nuevaFecha,
+        estado: 'activo'
+      })
+      .eq('id', distribuidorId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Error renovando distribuidor en Supabase:', err);
+    throw err;
+  }
+}
+
+/**
+ * Elimina un distribuidor de Supabase
+ */
+export async function eliminarDistribuidorEnSupabase(distribuidorId) {
+  if (!supabase) return false;
+
+  try {
+    const { error } = await supabase
+      .from('distribuidores')
+      .delete()
+      .eq('id', distribuidorId);
+
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('Error eliminando distribuidor en Supabase:', err);
+    throw err;
+  }
+}

@@ -262,17 +262,33 @@ export function ClientsView({
                       {/* Plataforma y Perfil */}
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                          <span 
-                            className="platform-pill"
-                            data-platform={platformInfo.id}
-                            style={{
-                              backgroundColor: platformInfo.badgeBg,
-                              color: platformInfo.textColor,
-                              borderColor: platformInfo.borderColor
-                            }}
-                          >
-                            {platformInfo.name}
-                          </span>
+                          {platformInfo.logo ? (
+                            <img
+                              src={platformInfo.logo}
+                              alt={platformInfo.name}
+                              title={platformInfo.name}
+                              style={{
+                                height: '28px',
+                                maxWidth: '65px',
+                                objectFit: 'contain',
+                                borderRadius: '5px',
+                                display: 'block',
+                                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.12)'
+                              }}
+                            />
+                          ) : (
+                            <span 
+                              className="platform-pill"
+                              data-platform={platformInfo.id}
+                              style={{
+                                backgroundColor: platformInfo.badgeBg,
+                                color: platformInfo.textColor,
+                                borderColor: platformInfo.borderColor
+                              }}
+                            >
+                              {platformInfo.name}
+                            </span>
+                          )}
                           <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                             {perfilInfo?.nombre || `Perfil ${perfilInfo?.numero || '?'}`}
                           </span>
@@ -420,18 +436,34 @@ export function ClientsView({
                   {/* Fila Superior: Plataforma + Perfil + PIN */}
                   <div className="mobile-card-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span 
-                        className="platform-pill"
-                        data-platform={platformInfo.id}
-                        style={{
-                          backgroundColor: platformInfo.badgeBg,
-                          color: platformInfo.textColor,
-                          borderColor: platformInfo.borderColor,
-                          fontSize: '0.75rem'
-                        }}
-                      >
-                        {platformInfo.name}
-                      </span>
+                      {platformInfo.logo ? (
+                        <img
+                          src={platformInfo.logo}
+                          alt={platformInfo.name}
+                          title={platformInfo.name}
+                          style={{
+                            height: '24px',
+                            maxWidth: '55px',
+                            objectFit: 'contain',
+                            borderRadius: '4px',
+                            display: 'block',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)'
+                          }}
+                        />
+                      ) : (
+                        <span 
+                          className="platform-pill"
+                          data-platform={platformInfo.id}
+                          style={{
+                            backgroundColor: platformInfo.badgeBg,
+                            color: platformInfo.textColor,
+                            borderColor: platformInfo.borderColor,
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          {platformInfo.name}
+                        </span>
+                      )}
                       <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                         {perfilInfo?.nombre || `Perfil ${perfilInfo?.numero || '?'}`}
                       </span>
@@ -516,7 +548,7 @@ export function ClientsView({
                     >
                       <WhatsAppIcon size={19} color="#ffffff" />
                       <span>
-                        {esUrgente ? 'Avisar por WhatsApp (2 Días)' : 'Enviar WhatsApp'}
+                        {esUrgente ? 'Avisar por WhatsApp' : 'Enviar WhatsApp'}
                       </span>
                       {cli.recordatorioEnviado && (
                         <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>✓✓</span>

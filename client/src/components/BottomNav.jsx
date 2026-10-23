@@ -1,10 +1,11 @@
 import React from 'react';
-import { Users, Tv, KeyRound, Globe, Bell } from 'lucide-react';
+import { Users, Tv, KeyRound, Globe, Bell, ShieldCheck } from 'lucide-react';
 
 export function BottomNav({
   activeTab,
   onSelectTab,
-  urgentCount = 0
+  urgentCount = 0,
+  isSuperAdmin = false
 }) {
   const tabs = [
     {
@@ -27,6 +28,12 @@ export function BottomNav({
       icon: KeyRound,
       color: '#10b981'
     },
+    ...(isSuperAdmin ? [{
+      id: 'distribuidores',
+      label: 'Distribuidores',
+      icon: ShieldCheck,
+      color: '#10b981'
+    }] : []),
     {
       id: 'portal',
       label: 'Portal',

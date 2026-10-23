@@ -32,7 +32,9 @@ export function CustomerPortalView({
   clientes = [],
   cuentas = [],
   onOpenReceipt = () => {},
-  onOpenWhatsApp = () => {}
+  onOpenWhatsApp = () => {},
+  onGoToAdmin = null,
+  isAdminAuthenticated = false
 }) {
   const toast = useToast();
 
@@ -142,15 +144,34 @@ export function CustomerPortalView({
           </div>
         </div>
 
-        <button 
-          type="button" 
-          className="btn btn-secondary btn-sm"
-          onClick={handleCopyPortalLink}
-          title="Copiar enlace del portal para compartir a clientes"
-        >
-          <Share2 size={15} />
-          <span>Copiar Enlace del Portal</span>
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button 
+            type="button" 
+            className="btn btn-secondary btn-sm"
+            onClick={handleCopyPortalLink}
+            title="Copiar enlace del portal para compartir a clientes"
+          >
+            <Share2 size={15} />
+            <span>Copiar Enlace</span>
+          </button>
+
+          {onGoToAdmin && (
+            <button
+              type="button"
+              className="btn btn-primary btn-sm portal-admin-btn"
+              onClick={onGoToAdmin}
+              title="Ir al Panel de Administración de Gestión de Clientes"
+              style={{
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                border: 'none',
+                boxShadow: '0 0 12px rgba(139, 92, 246, 0.35)'
+              }}
+            >
+              <KeyRound size={15} />
+              <span>{isAdminAuthenticated ? 'Panel Admin' : 'Acceso Admin 🔐'}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Buscador de Cliente por WhatsApp / Celular */}
