@@ -347,18 +347,24 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
   const handleSaveClient = async (nuevoCliente) => {
     let clientToSave = nuevoCliente;
     const distCode = currentDistributor?.codigo_distribuidor || 'DIST-2026';
+    let guardadoEnNube = false;
 
-    if (isCloudConnected) {
+    if (isCloudConnected || isSupabaseConfigured) {
       try {
         const guardado = await guardarClienteEnSupabase(nuevoCliente, distCode);
-        if (guardado) clientToSave = guardado;
+        if (guardado) {
+          clientToSave = guardado;
+          guardadoEnNube = true;
+          setIsCloudConnected(true);
+        }
       } catch (err) {
         console.error('Error guardando cliente en Supabase:', err);
+        toast.error(`Aviso Nube: ${err.message || 'No se pudo sincronizar con la base de datos'}`);
       }
     }
 
     setData(prev => {
-      const updatedCuentas = prev.cuentas.map(cta => {
+      const updatedCuentas = (prev.cuentas || []).map(cta => {
         if (String(cta.id) === String(clientToSave.cuentaId)) {
           const updatedPerfiles = (cta.perfiles || []).map(p => {
             if (String(p.id) === String(clientToSave.perfilId)) {
@@ -379,11 +385,16 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
       return {
         ...prev,
         cuentas: updatedCuentas,
-        clientes: [clientToSave, ...prev.clientes]
+        clientes: [clientToSave, ...(prev.clientes || []).filter(c => String(c.id) !== String(clientToSave.id))]
       };
     });
 
-    toast.success(`¡Cliente ${clientToSave.nombre} asignado con éxito!`, 'Asignación Exitosa');
+    toast.success(
+      guardadoEnNube 
+        ? `¡Cliente ${clientToSave.nombre} asignado y guardado permanentemente!` 
+        : `¡Cliente ${clientToSave.nombre} asignado localmente!`,
+      'Asignación Exitosa'
+    );
 
     const cta = cuentas.find(c => String(c.id) === String(clientToSave.cuentaId));
     const prf = cta?.perfiles?.find(p => String(p.id) === String(clientToSave.perfilId));
@@ -453,46 +464,38 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
 
   // 2.2. Actualizar datos de un cliente existente
   const handleUpdateClient = async (clienteActualizado, perfilAnteriorId) => {
-    if (isCloudConnected) {
+    if (isCloudConnected || isSupabaseConfigured) {
       try {
         await actualizarClienteEnSupabase(clienteActualizado, perfilAnteriorId);
+        setIsCloudConnected(true);
       } catch (err) {
         console.error('Error actualizando cliente en Supabase:', err);
+        toast.error(`Aviso Nube: ${err.message || 'Error al actualizar en la base de datos'}`);
       }
     }
 
     setData(prev => {
-      let updatedCuentas = prev.cuentas;
-
-      if (perfilAnteriorId && String(perfilAnteriorId) !== String(clienteActualizado.perfilId)) {
-        updatedCuentas = updatedCuentas.map(cta => {
-          const updatedPerfiles = (cta.perfiles || []).map(p => {
-            if (String(p.id) === String(perfilAnteriorId)) {
-              return { ...p, estado: 'disponible', clienteId: null };
-            }
-            if (String(p.id) === String(clienteActualizado.perfilId)) {
-              return { ...p, estado: 'asignado', clienteId: clienteActualizado.id, pin: clienteActualizado.pin || p.pin };
-            }
-            return p;
-          });
-          return { ...cta, perfiles: updatedPerfiles };
-        });
-      } else {
-        updatedCuentas = updatedCuentas.map(cta => {
-          if (String(cta.id) === String(clienteActualizado.cuentaId)) {
-            const updatedPerfiles = (cta.perfiles || []).map(p => {
-              if (String(p.id) === String(clienteActualizado.perfilId)) {
-                return { ...p, pin: clienteActualizado.pin || p.pin };
-              }
-              return p;
-            });
-            return { ...cta, perfiles: updatedPerfiles };
+      let updatedCuentas = (prev.cuentas || []).map(cta => {
+        const updatedPerfiles = (cta.perfiles || []).map(p => {
+          // Si este perfil era el anterior y cambió, liberarlo
+          if (perfilAnteriorId && String(p.id) === String(perfilAnteriorId) && String(perfilAnteriorId) !== String(clienteActualizado.perfilId)) {
+            return { ...p, estado: 'disponible', clienteId: null };
           }
-          return cta;
+          // Si este perfil es el nuevo asignado, marcarlo
+          if (clienteActualizado.perfilId && String(p.id) === String(clienteActualizado.perfilId)) {
+            return { 
+              ...p, 
+              estado: 'asignado', 
+              clienteId: clienteActualizado.id, 
+              pin: clienteActualizado.pin || p.pin 
+            };
+          }
+          return p;
         });
-      }
+        return { ...cta, perfiles: updatedPerfiles };
+      });
 
-      const updatedClientes = prev.clientes.map(cli => 
+      const updatedClientes = (prev.clientes || []).map(cli => 
         String(cli.id) === String(clienteActualizado.id) ? clienteActualizado : cli
       );
 

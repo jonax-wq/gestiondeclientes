@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://svgsvikpkwicrnclbvmy.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_sFyCdytn85hoDMDWCuDjTA_cNx0-4Gn';
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && 
@@ -283,34 +283,70 @@ export async function guardarClienteEnSupabase(nuevoCliente, distribuidorCodigo 
     const celularLimpio = String(nuevoCliente.celular || '').trim();
     const codigoPaisLimpio = String(nuevoCliente.codigoPais || '+51').trim();
     const celularCompleto = nuevoCliente.celularCompleto || `${codigoPaisLimpio}${celularLimpio}`;
-    const cuentaIdNum = nuevoCliente.cuentaId ? parseInt(nuevoCliente.cuentaId, 10) : null;
-    const perfilIdNum = nuevoCliente.perfilId ? parseInt(nuevoCliente.perfilId, 10) : null;
+    const cuentaIdNum = nuevoCliente.cuentaId != null ? parseInt(nuevoCliente.cuentaId, 10) : null;
+    const perfilIdNum = nuevoCliente.perfilId != null ? parseInt(nuevoCliente.perfilId, 10) : null;
+
+    const payload = {
+      nombre: nuevoCliente.nombre || `Cliente ${celularLimpio}`,
+      codigo_pais: codigoPaisLimpio,
+      celular: celularLimpio,
+      celular_completo: celularCompleto,
+      cuenta_id: isNaN(cuentaIdNum) ? null : cuentaIdNum,
+      perfil_id: isNaN(perfilIdNum) ? null : perfilIdNum,
+      pin: nuevoCliente.pin || '',
+      fecha_inicio: nuevoCliente.fechaInicio,
+      fecha_vencimiento: nuevoCliente.fechaVencimiento,
+      precio_cobrado: Number(nuevoCliente.precioCobrado) || 0,
+      distribuidor_codigo: distribuidorCodigo || 'DIST-2026',
+      notas: nuevoCliente.notas || null
+    };
 
     // 1. Insertar el cliente con distribuidor_codigo
-    const { data: clienteCreado, error: errCli } = await supabase
+    let clienteCreado = null;
+    const { data: resData, error: errCli } = await supabase
       .from('clientes')
-      .insert({
-        nombre: nuevoCliente.nombre || `Cliente ${celularLimpio}`,
-        codigo_pais: codigoPaisLimpio,
-        celular: celularLimpio,
-        celular_completo: celularCompleto,
-        cuenta_id: isNaN(cuentaIdNum) ? null : cuentaIdNum,
-        perfil_id: isNaN(perfilIdNum) ? null : perfilIdNum,
-        pin: nuevoCliente.pin || '',
-        fecha_inicio: nuevoCliente.fechaInicio,
-        fecha_vencimiento: nuevoCliente.fechaVencimiento,
-        precio_cobrado: Number(nuevoCliente.precioCobrado) || 0,
-        distribuidor_codigo: distribuidorCodigo || 'DIST-2026',
-        notas: nuevoCliente.notas || null
-      })
+      .insert(payload)
       .select()
       .single();
 
-    if (errCli) throw errCli;
+    if (errCli) {
+      // Si la secuencia de PostgreSQL (clientes_id_seq) está desfasada (código 23505 - clave primaria duplicada)
+      if (errCli.code === '23505' || String(errCli.message || '').toLowerCase().includes('clientes_pkey')) {
+        console.warn('Secuencia clientes_id_seq desfasada en Supabase. Auto-recuperando con MAX(id) + 1...');
+        const { data: maxRows } = await supabase
+          .from('clientes')
+          .select('id')
+          .order('id', { ascending: false })
+          .limit(1);
 
-    // 2. Marcar el perfil como 'asignado'
+        const nextId = (maxRows && maxRows.length > 0 && Number.isInteger(maxRows[0].id))
+          ? maxRows[0].id + 1
+          : 100;
+
+        const { data: retryData, error: retryErr } = await supabase
+          .from('clientes')
+          .insert({ ...payload, id: nextId })
+          .select()
+          .single();
+
+        if (retryErr) {
+          throw retryErr;
+        }
+        clienteCreado = retryData;
+      } else {
+        throw errCli;
+      }
+    } else {
+      clienteCreado = resData;
+    }
+
+    if (!clienteCreado) {
+      throw new Error('No se recibió la confirmación del cliente creado en Supabase');
+    }
+
+    // 2. Marcar el perfil como 'asignado' y vincular el cliente
     if (perfilIdNum && !isNaN(perfilIdNum)) {
-      await supabase
+      const { error: errPrf } = await supabase
         .from('perfiles')
         .update({
           estado: 'asignado',
@@ -318,13 +354,17 @@ export async function guardarClienteEnSupabase(nuevoCliente, distribuidorCodigo 
           pin: nuevoCliente.pin || ''
         })
         .eq('id', perfilIdNum);
+
+      if (errPrf) {
+        console.warn('Aviso: Perfil no pudo actualizarse en Supabase:', errPrf.message);
+      }
     }
 
     return {
       ...nuevoCliente,
       id: clienteCreado.id,
-      cuentaId: clienteCreado.cuenta_id,
-      perfilId: clienteCreado.perfil_id,
+      cuentaId: clienteCreado.cuenta_id != null ? clienteCreado.cuenta_id : nuevoCliente.cuentaId,
+      perfilId: clienteCreado.perfil_id != null ? clienteCreado.perfil_id : nuevoCliente.perfilId,
       distribuidorCodigo: clienteCreado.distribuidor_codigo,
       celularCompleto
     };
@@ -344,9 +384,9 @@ export async function actualizarClienteEnSupabase(clienteActualizado, perfilAnte
     const celularLimpio = String(clienteActualizado.celular || '').trim();
     const codigoPaisLimpio = String(clienteActualizado.codigoPais || '+51').trim();
     const celularCompleto = clienteActualizado.celularCompleto || `${codigoPaisLimpio}${celularLimpio}`;
-    const cuentaIdNum = clienteActualizado.cuentaId ? parseInt(clienteActualizado.cuentaId, 10) : null;
-    const perfilIdNum = clienteActualizado.perfilId ? parseInt(clienteActualizado.perfilId, 10) : null;
-    const perfilAnteriorIdNum = perfilAnteriorId ? parseInt(perfilAnteriorId, 10) : null;
+    const cuentaIdNum = clienteActualizado.cuentaId != null ? parseInt(clienteActualizado.cuentaId, 10) : null;
+    const perfilIdNum = clienteActualizado.perfilId != null ? parseInt(clienteActualizado.perfilId, 10) : null;
+    const perfilAnteriorIdNum = perfilAnteriorId != null ? parseInt(perfilAnteriorId, 10) : null;
 
     const { error: errCli } = await supabase
       .from('clientes')
@@ -357,36 +397,33 @@ export async function actualizarClienteEnSupabase(clienteActualizado, perfilAnte
         celular_completo: celularCompleto,
         cuenta_id: isNaN(cuentaIdNum) ? null : cuentaIdNum,
         perfil_id: isNaN(perfilIdNum) ? null : perfilIdNum,
-        pin: clienteActualizado.pin,
+        pin: clienteActualizado.pin || '',
         fecha_inicio: clienteActualizado.fechaInicio,
         fecha_vencimiento: clienteActualizado.fechaVencimiento,
         precio_cobrado: Number(clienteActualizado.precioCobrado) || 0,
-        notas: clienteActualizado.notas
+        notas: clienteActualizado.notas || null
       })
       .eq('id', clienteActualizado.id);
 
     if (errCli) throw errCli;
 
-    if (perfilAnteriorIdNum && perfilAnteriorIdNum !== perfilIdNum) {
+    // Manejo de perfiles: liberar perfil anterior si cambió
+    if (perfilAnteriorIdNum && !isNaN(perfilAnteriorIdNum) && perfilAnteriorIdNum !== perfilIdNum) {
       await supabase
         .from('perfiles')
         .update({ estado: 'disponible', cliente_id: null })
         .eq('id', perfilAnteriorIdNum);
+    }
 
-      if (perfilIdNum && !isNaN(perfilIdNum)) {
-        await supabase
-          .from('perfiles')
-          .update({
-            estado: 'asignado',
-            cliente_id: clienteActualizado.id,
-            pin: clienteActualizado.pin
-          })
-          .eq('id', perfilIdNum);
-      }
-    } else if (perfilIdNum && !isNaN(perfilIdNum)) {
+    // Asignar el nuevo perfil (marcarlo como asignado y asociar cliente_id)
+    if (perfilIdNum && !isNaN(perfilIdNum)) {
       await supabase
         .from('perfiles')
-        .update({ pin: clienteActualizado.pin })
+        .update({
+          estado: 'asignado',
+          cliente_id: clienteActualizado.id,
+          pin: clienteActualizado.pin || ''
+        })
         .eq('id', perfilIdNum);
     }
 

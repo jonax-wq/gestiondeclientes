@@ -619,7 +619,7 @@ export function AccountsView({
                           </span>
                           <div className="profiles-list">
                             {perfiles.map(p => {
-                              const clienteAsignado = clientesPorPerfil[p.id];
+                              const clienteAsignado = clientesPorPerfil[p.id] || (p.clienteId ? clientes.find(c => String(c.id) === String(p.clienteId)) : null);
                               const estaAsignado = p.estado === 'asignado' || !!clienteAsignado;
 
                               return (

@@ -168,7 +168,7 @@ export function EditClientModal({
                   value={cuentaId}
                   onChange={(e) => {
                     setCuentaId(e.target.value);
-                    const cta = cuentas.find(c => c.id === e.target.value);
+                    const cta = cuentas.find(c => String(c.id) === String(e.target.value));
                     const primerLibre = cta?.perfiles?.find(p => p.estado === 'disponible');
                     if (primerLibre) {
                       setPerfilId(primerLibre.id);
@@ -191,7 +191,7 @@ export function EditClientModal({
                   value={perfilId}
                   onChange={(e) => {
                     setPerfilId(e.target.value);
-                    const prf = cuentaActual?.perfiles?.find(p => p.id === e.target.value);
+                    const prf = cuentaActual?.perfiles?.find(p => String(p.id) === String(e.target.value));
                     if (prf?.pin) setPin(prf.pin);
                   }}
                 >

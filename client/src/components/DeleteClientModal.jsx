@@ -7,12 +7,15 @@ export function DeleteClientModal({
   isOpen,
   onClose,
   cliente,
-  cuenta,
-  perfil,
+  cuentas = [],
+  cuenta: cuentaProp,
+  perfil: perfilProp,
   onConfirmDelete
 }) {
   if (!isOpen || !cliente) return null;
 
+  const cuenta = cuentaProp || (Array.isArray(cuentas) ? cuentas.find(c => String(c.id) === String(cliente.cuentaId)) : null);
+  const perfil = perfilProp || (cuenta?.perfiles || []).find(p => String(p.id) === String(cliente.perfilId));
   const platformInfo = cuenta ? PLATFORMS[cuenta.plataforma] || PLATFORMS.Otro : PLATFORMS.Otro;
   const diasRestantes = calcularDiasRestantes(cliente.fechaVencimiento);
 
