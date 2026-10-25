@@ -34,7 +34,12 @@ export async function cargarDatosDesdeSupabase(distribuidorCodigo = 'DIST-2026',
       queryCuentas = queryCuentas.eq('distribuidor_codigo', distribuidorCodigo);
     }
 
-    const { data: cuentasData, error: errCuentas } = await queryCuentas;
+    let { data: cuentasData, error: errCuentas } = await queryCuentas;
+    if (errCuentas && String(errCuentas.message || '').includes('distribuidor_codigo')) {
+      const fallback = await supabase.from('cuentas_streaming').select('*').order('id', { ascending: false });
+      cuentasData = fallback.data;
+      errCuentas = fallback.error;
+    }
     if (errCuentas) throw errCuentas;
 
     // Si no hay cuentas, devolver vacío de inmediato
@@ -63,7 +68,12 @@ export async function cargarDatosDesdeSupabase(distribuidorCodigo = 'DIST-2026',
       queryClientes = queryClientes.eq('distribuidor_codigo', distribuidorCodigo);
     }
 
-    const { data: clientesData, error: errClientes } = await queryClientes;
+    let { data: clientesData, error: errClientes } = await queryClientes;
+    if (errClientes && String(errClientes.message || '').includes('distribuidor_codigo')) {
+      const fallback = await supabase.from('clientes').select('*').order('id', { ascending: false });
+      clientesData = fallback.data;
+      errClientes = fallback.error;
+    }
     if (errClientes) throw errClientes;
 
     // Agrupar perfiles por cuenta_id
@@ -133,21 +143,30 @@ export async function guardarCuentaEnSupabase(nuevaCuenta, distribuidorCodigo = 
 
   try {
     // 1. Insertar la cuenta maestra con código de distribuidor
-    const { data: cuentaCreada, error: errCta } = await supabase
+    let cuentaPayload = {
+      plataforma: nuevaCuenta.plataforma,
+      correo: nuevaCuenta.correo,
+      password: nuevaCuenta.password,
+      fecha_corte_cuenta: nuevaCuenta.fechaCorte,
+      costo_cuenta: nuevaCuenta.costo || 0,
+      cantidad_perfiles: nuevaCuenta.cantidadPerfiles || 5,
+      proveedor: nuevaCuenta.proveedor || null,
+      notas: nuevaCuenta.notas || null,
+      distribuidor_codigo: distribuidorCodigo || 'DIST-2026'
+    };
+
+    let { data: cuentaCreada, error: errCta } = await supabase
       .from('cuentas_streaming')
-      .insert({
-        plataforma: nuevaCuenta.plataforma,
-        correo: nuevaCuenta.correo,
-        password: nuevaCuenta.password,
-        fecha_corte_cuenta: nuevaCuenta.fechaCorte,
-        costo_cuenta: nuevaCuenta.costo || 0,
-        cantidad_perfiles: nuevaCuenta.cantidadPerfiles || 5,
-        proveedor: nuevaCuenta.proveedor || null,
-        notas: nuevaCuenta.notas || null,
-        distribuidor_codigo: distribuidorCodigo || 'DIST-2026'
-      })
+      .insert(cuentaPayload)
       .select()
       .single();
+
+    if (errCta && String(errCta.message || '').includes('distribuidor_codigo')) {
+      delete cuentaPayload.distribuidor_codigo;
+      const retry = await supabase.from('cuentas_streaming').insert(cuentaPayload).select().single();
+      cuentaCreada = retry.data;
+      errCta = retry.error;
+    }
 
     if (errCta) throw errCta;
 
@@ -301,41 +320,63 @@ export async function guardarClienteEnSupabase(nuevoCliente, distribuidorCodigo 
       notas: nuevoCliente.notas || null
     };
 
-    // 1. Insertar el cliente con distribuidor_codigo
+    // 1. Insertar el cliente con reintentos inteligentes (distribuidor_codigo y secuencias)
     let clienteCreado = null;
-    const { data: resData, error: errCli } = await supabase
+    let currentPayload = { ...payload };
+
+    let { data: resData, error: errCli } = await supabase
       .from('clientes')
-      .insert(payload)
+      .insert(currentPayload)
       .select()
       .single();
 
-    if (errCli) {
-      // Si la secuencia de PostgreSQL (clientes_id_seq) está desfasada (código 23505 - clave primaria duplicada)
-      if (errCli.code === '23505' || String(errCli.message || '').toLowerCase().includes('clientes_pkey')) {
-        console.warn('Secuencia clientes_id_seq desfasada en Supabase. Auto-recuperando con MAX(id) + 1...');
-        const { data: maxRows } = await supabase
-          .from('clientes')
-          .select('id')
-          .order('id', { ascending: false })
-          .limit(1);
+    // Reintento A: si la columna distribuidor_codigo no existe en el schema cache de Supabase
+    if (errCli && String(errCli.message || '').includes('distribuidor_codigo')) {
+      console.warn('Aviso: Columna distribuidor_codigo no encontrada en Supabase. Reintentando sin la columna...');
+      delete currentPayload.distribuidor_codigo;
+      const resSinDist = await supabase
+        .from('clientes')
+        .insert(currentPayload)
+        .select()
+        .single();
+      resData = resSinDist.data;
+      errCli = resSinDist.error;
+    }
 
-        const nextId = (maxRows && maxRows.length > 0 && Number.isInteger(maxRows[0].id))
-          ? maxRows[0].id + 1
-          : 100;
+    // Reintento B: si la secuencia de PostgreSQL (clientes_id_seq) está desfasada (código 23505 - clave primaria duplicada)
+    if (errCli && (errCli.code === '23505' || String(errCli.message || '').toLowerCase().includes('clientes_pkey'))) {
+      console.warn('Secuencia clientes_id_seq desfasada en Supabase. Auto-recuperando con MAX(id) + 1...');
+      const { data: maxRows } = await supabase
+        .from('clientes')
+        .select('id')
+        .order('id', { ascending: false })
+        .limit(1);
 
-        const { data: retryData, error: retryErr } = await supabase
+      const nextId = (maxRows && maxRows.length > 0 && Number.isInteger(maxRows[0].id))
+        ? maxRows[0].id + 1
+        : 100;
+
+      let resRetry = await supabase
+        .from('clientes')
+        .insert({ ...currentPayload, id: nextId })
+        .select()
+        .single();
+
+      if (resRetry.error && String(resRetry.error.message || '').includes('distribuidor_codigo')) {
+        delete currentPayload.distribuidor_codigo;
+        resRetry = await supabase
           .from('clientes')
-          .insert({ ...payload, id: nextId })
+          .insert({ ...currentPayload, id: nextId })
           .select()
           .single();
-
-        if (retryErr) {
-          throw retryErr;
-        }
-        clienteCreado = retryData;
-      } else {
-        throw errCli;
       }
+
+      if (resRetry.error) {
+        throw resRetry.error;
+      }
+      clienteCreado = resRetry.data;
+    } else if (errCli) {
+      throw errCli;
     } else {
       clienteCreado = resData;
     }
