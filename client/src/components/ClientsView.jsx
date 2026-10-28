@@ -13,6 +13,7 @@ import {
   Clock, 
   CheckCircle2, 
   Plus, 
+  PlusCircle,
   Sparkles,
   Edit,
   Receipt
@@ -31,6 +32,7 @@ export function ClientsView({
   onDeleteClient, 
   onEditClient,
   onNewClient,
+  onAddService,
   onOpenReceipt,
   activeFilter = 'todos',
   onFilterChange 
@@ -374,9 +376,17 @@ export function ClientsView({
                         </div>
                       </td>
 
-                      {/* Acciones: Comprobante, Editar, Renovar (+30 días) y Liberar perfil */}
+                      {/* Acciones: Asignar otro servicio, Comprobante, Editar, Renovar (+30 días) y Liberar perfil */}
                       <td>
                         <div className="action-buttons-group" style={{ justifyContent: 'center' }}>
+                          <button
+                            type="button"
+                            className="btn-icon-action add-service"
+                            onClick={() => onAddService && onAddService(cli)}
+                            title="Asignar otro servicio / perfil a este cliente (Netflix, Prime, Disney, etc.)"
+                          >
+                            <PlusCircle size={16} />
+                          </button>
                           <button
                             type="button"
                             className="btn-icon-action receipt"
@@ -556,6 +566,17 @@ export function ClientsView({
                     </button>
 
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary mobile-sub-btn add-service"
+                        onClick={() => onAddService && onAddService(cli)}
+                        title="Asignar otro servicio a este cliente"
+                        style={{ borderColor: 'rgba(168, 85, 247, 0.4)', color: '#c084fc' }}
+                      >
+                        <PlusCircle size={14} />
+                        <span>+Servicio</span>
+                      </button>
+
                       <button
                         type="button"
                         className="btn btn-secondary mobile-sub-btn receipt"

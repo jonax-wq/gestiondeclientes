@@ -151,6 +151,7 @@ export default function App() {
   const [whatsAppSelection, setWhatsAppSelection] = useState({ cliente: null, perfil: null, cuenta: null, initialTemplate: null });
   const [receiptSelection, setReceiptSelection] = useState({ cliente: null, perfil: null, cuenta: null });
   const [preselectedSlot, setPreselectedSlot] = useState({ cuentaId: null, perfilId: null });
+  const [preselectedClient, setPreselectedClient] = useState(null);
 
   // Escuchar evento de instalación PWA
   useEffect(() => {
@@ -691,6 +692,14 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
   // 8. Asignar perfil directo desde la vista de Cuentas
   const handleAssignProfileFromAccount = (cuentaId, perfilId) => {
     setPreselectedSlot({ cuentaId, perfilId });
+    setPreselectedClient(null);
+    setIsNewClientOpen(true);
+  };
+
+  // 8.1. Asignar nuevo servicio a un cliente ya registrado
+  const handleAddServiceToClient = (client) => {
+    setPreselectedSlot({ cuentaId: null, perfilId: null });
+    setPreselectedClient(client);
     setIsNewClientOpen(true);
   };
 
@@ -819,7 +828,11 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
         <div className="app-container">
           {/* 1. Barra de Navegación Principal */}
           <Navbar 
-            onNewClient={() => { setPreselectedSlot({ cuentaId: null, perfilId: null }); setIsNewClientOpen(true); }}
+            onNewClient={() => { 
+              setPreselectedSlot({ cuentaId: null, perfilId: null }); 
+              setPreselectedClient(null);
+              setIsNewClientOpen(true); 
+            }}
             onNewAccount={() => setIsNewAccountOpen(true)}
             urgentCount={urgentClients.length}
             onFilterUrgent={() => { setActiveTab('clientes'); setClientFilter('por_vencer'); }}
@@ -855,7 +868,12 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
               onRenewClient={handleRenewClient}
               onDeleteClient={handleOpenDeleteClient}
               onEditClient={handleOpenEditClient}
-              onNewClient={() => { setPreselectedSlot({ cuentaId: null, perfilId: null }); setIsNewClientOpen(true); }}
+              onAddService={handleAddServiceToClient}
+              onNewClient={() => { 
+                setPreselectedSlot({ cuentaId: null, perfilId: null }); 
+                setPreselectedClient(null);
+                setIsNewClientOpen(true); 
+              }}
               activeFilter={clientFilter}
               onFilterChange={setClientFilter}
             />
@@ -905,13 +923,16 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
 
           {/* Modales */}
           <NewClientModal 
-            key={isNewClientOpen ? `client-${preselectedSlot?.cuentaId || 'all'}-${preselectedSlot?.perfilId || 'new'}` : 'client-closed'}
+            key={isNewClientOpen ? `client-${preselectedSlot?.cuentaId || 'all'}-${preselectedSlot?.perfilId || 'new'}-${preselectedClient?.id || preselectedClient?.celular || 'new'}` : 'client-closed'}
             isOpen={isNewClientOpen}
             onClose={() => {
               setIsNewClientOpen(false);
               setPreselectedSlot({ cuentaId: null, perfilId: null });
+              setPreselectedClient(null);
             }}
             cuentas={cuentas}
+            clientes={clientes}
+            initialClient={preselectedClient}
             onSaveClient={handleSaveClient}
             preselectedCuentaId={preselectedSlot.cuentaId}
             preselectedPerfilId={preselectedSlot.perfilId}
