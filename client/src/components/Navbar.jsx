@@ -1,15 +1,7 @@
 import React from 'react';
-import { UserPlus, PlusCircle, Bell, Menu, KeyRound, Lock } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
-export function Navbar({
-  onNewClient,
-  onNewAccount,
-  urgentCount,
-  onFilterUrgent,
-  onToggleMobileSidebar,
-  onGoToCodes,
-  onLockAdmin
-}) {
+export function Navbar({ onToggleMobileSidebar }) {
   return (
     <header className="navbar">
       <div className="brand-wrapper">
@@ -40,67 +32,6 @@ export function Navbar({
             Gestión Inteligente de Cuentas de Streaming
           </p>
         </div>
-      </div>
-
-      <div className="nav-actions">
-        {/* Alerta de urgentes (≤ 2 días) */}
-        {urgentCount > 0 && (
-          <button
-            className="btn btn-secondary pulse-amber nav-urgent-btn"
-            onClick={onFilterUrgent}
-            title="Ver clientes por vencer en 2 días o menos"
-          >
-            <Bell size={16} className="pulse-attention" />
-            <span className="hide-on-mobile">{urgentCount} por vencer</span>
-            <span className="show-on-mobile">{urgentCount}</span>
-          </button>
-        )}
-
-        {/* Acceso a Códigos Hogar (visible en desktop) */}
-        {onGoToCodes && (
-          <button
-            className="btn btn-secondary nav-btn-codes hide-on-mobile"
-            onClick={onGoToCodes}
-            title="Abrir Centro de Códigos Netflix Hogar y OTP"
-          >
-            <KeyRound size={16} />
-            <span>Códigos Hogar</span>
-          </button>
-        )}
-
-        {/* Nueva Cuenta */}
-        <button
-          className="btn btn-secondary nav-new-account-btn"
-          onClick={onNewAccount}
-          title="Registrar una nueva cuenta maestra"
-        >
-          <PlusCircle size={17} />
-          <span className="hide-on-mobile">Nueva Cuenta</span>
-        </button>
-
-        {/* Asignar Cliente */}
-        <button
-          className="btn btn-primary nav-new-client-btn"
-          onClick={onNewClient}
-          title="Asignar un nuevo cliente a un perfil"
-        >
-          <UserPlus size={17} />
-          <span className="hide-on-mobile">+ Asignar Cliente</span>
-          <span className="show-on-mobile">+ Cliente</span>
-        </button>
-
-        {/* Bloquear Sistema / Cerrar Sesión Admin */}
-        {onLockAdmin && (
-          <button
-            type="button"
-            className="btn btn-secondary nav-lock-btn"
-            onClick={onLockAdmin}
-            title="Bloquear sistema (Cerrar sesión de administrador)"
-          >
-            <Lock size={16} />
-            <span className="hide-on-mobile">Bloquear</span>
-          </button>
-        )}
       </div>
     </header>
   );

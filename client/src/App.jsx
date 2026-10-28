@@ -828,17 +828,7 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
         <div className="app-container">
           {/* 1. Barra de Navegación Principal */}
           <Navbar 
-            onNewClient={() => { 
-              setPreselectedSlot({ cuentaId: null, perfilId: null }); 
-              setPreselectedClient(null);
-              setIsNewClientOpen(true); 
-            }}
-            onNewAccount={() => setIsNewAccountOpen(true)}
-            urgentCount={urgentClients.length}
-            onFilterUrgent={() => { setActiveTab('clientes'); setClientFilter('por_vencer'); }}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
-            onGoToCodes={() => setActiveTab('codigos')}
-            onLockAdmin={handleLockAdmin}
           />
 
           {/* 2. Banner de Alerta Urgente (≤ 2 Días) */}
