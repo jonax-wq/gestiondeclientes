@@ -696,23 +696,14 @@ export function ClientsView({
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                      {g.totalPlataformas > 1 && (
-                        <span className="multi-plat-badge mobile">
-                          <Sparkles size={11} />
-                          <span>{g.totalPlataformas} serv.</span>
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        className="btn-card-assign-mobile"
-                        onClick={() => onNewClient({ cliente: g })}
-                        title={`Asignar otra pantalla a ${g.nombre}`}
-                      >
-                        <Plus size={13} />
-                        <span>Asignar</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className="btn-card-assign-mobile-icon"
+                      onClick={() => onNewClient({ cliente: g })}
+                      title={`Asignar otra pantalla a ${g.nombre}`}
+                    >
+                      <Plus size={16} />
+                    </button>
                   </div>
 
                   {/* Lista de pantallas móviles limpias y ordenadas */}
