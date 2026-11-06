@@ -446,7 +446,7 @@ export function ClientsView({
                         title={`Asignar otra plataforma a ${g.nombre}`}
                       >
                         <Plus size={14} />
-                        <span>+ Asignar pantalla</span>
+                        <span>Asignar pantalla</span>
                       </button>
 
                       <button
@@ -664,12 +664,12 @@ export function ClientsView({
                 >
                   {/* Cabecera Móvil */}
                   <div className="client-card-header mobile">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                       <div className="client-avatar-badge mobile" title={g.nombre}>
                         {initialLetter}
                       </div>
-                      <div>
-                        <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-light)', margin: 0 }}>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <h4 style={{ fontSize: '1.02rem', fontWeight: 800, color: 'var(--text-light)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {g.nombre}
                         </h4>
                         <div className="client-phone-row" style={{ marginTop: '2px' }}>
@@ -696,47 +696,27 @@ export function ClientsView({
                       </div>
                     </div>
 
-                    {g.totalPlataformas > 1 ? (
-                      <span className="multi-plat-badge mobile">
-                        <Sparkles size={11} />
-                        <span>{g.totalPlataformas} servicios</span>
-                      </span>
-                    ) : (
-                      <span className="single-plat-badge mobile">
-                        1 servicio
-                      </span>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      {g.totalPlataformas > 1 && (
+                        <span className="multi-plat-badge mobile">
+                          <Sparkles size={11} />
+                          <span>{g.totalPlataformas} serv.</span>
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className="btn-card-assign-mobile"
+                        onClick={() => onNewClient({ cliente: g })}
+                        title={`Asignar otra pantalla a ${g.nombre}`}
+                      >
+                        <Plus size={13} />
+                        <span>Asignar</span>
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Acciones principales del cliente en móvil */}
-                  <div style={{ display: 'flex', gap: '8px', padding: '10px 14px 0 14px' }}>
-                    <button
-                      type="button"
-                      className={`btn btn-whatsapp mobile-wa-btn ${esUrgente ? 'pulse-attention' : ''}`}
-                      style={{ flex: 1.2 }}
-                      onClick={() => {
-                        if (platCritica) {
-                          onOpenWhatsApp(platCritica.cliente, platCritica.perfilInfo, platCritica.cuentaInfo);
-                        }
-                      }}
-                    >
-                      <WhatsAppIcon size={17} color="#ffffff" />
-                      <span>{esUrgente ? 'Alerta WhatsApp' : 'WhatsApp'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="btn-card-assign"
-                      style={{ flex: 1, height: '38px', justifyContent: 'center' }}
-                      onClick={() => onNewClient({ cliente: g })}
-                    >
-                      <Plus size={14} />
-                      <span>+ Asignar</span>
-                    </button>
-                  </div>
-
-                  {/* Lista de pantallas móviles 100% visibles */}
-                  <div className="mobile-expanded-subitems" style={{ padding: '12px 14px 14px 14px', borderTop: 'none' }}>
+                  {/* Lista de pantallas móviles limpias y ordenadas */}
+                  <div className="mobile-expanded-subitems" style={{ padding: '10px 12px 12px 12px', borderTop: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {g.plataformas.map((p) => {
                       const cli = p.cliente;
                       const plat = p.platformInfo;
@@ -745,70 +725,107 @@ export function ClientsView({
 
                       return (
                         <div key={cli.id} className="mobile-subitem-card">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {/* Fila 1: Plataforma, Perfil y PIN */}
+                          <div className="mobile-subitem-top">
+                            <div className="mobile-subitem-brand">
                               {plat.logo ? (
-                                <img src={plat.logo} alt={plat.name} style={{ height: '22px', objectFit: 'contain' }} />
+                                <img src={plat.logo} alt={plat.name} className="mobile-subitem-logo" />
                               ) : (
                                 <span className="platform-pill">{plat.name}</span>
                               )}
-                              <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>
-                                {prf?.nombre || `Perfil ${prf?.numero || '?'}`}
-                              </span>
+                              <div className="mobile-subitem-profile-info">
+                                <span className="mobile-subitem-profile-name">
+                                  {prf?.nombre || `Perfil ${prf?.numero || '?'}`}
+                                </span>
+                                {cta?.correo && (
+                                  <span className="mobile-subitem-account-email">
+                                    {cta.correo}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <span className="pin-badge" style={{ fontSize: '0.78rem' }}>
-                              PIN: {cli.pin || prf?.pin || '----'}
-                            </span>
+
+                            {/* PIN de Acceso */}
+                            <div className="mobile-subitem-pin-wrapper">
+                              <span className="pin-badge mobile">
+                                <KeyRound size={11} style={{ marginRight: '3px', opacity: 0.7 }} />
+                                {cli.pin || prf?.pin || '----'}
+                              </span>
+                              {(cli.pin || prf?.pin) && (
+                                <button
+                                  type="button"
+                                  className="btn-copy-inline"
+                                  onClick={(e) => handleCopiarPin(cli.pin || prf?.pin, cli.id, e)}
+                                  title="Copiar PIN"
+                                >
+                                  {pinCopiado === cli.id ? <Check size={12} className="text-emerald" /> : <Copy size={12} />}
+                                </button>
+                              )}
+                            </div>
                           </div>
 
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', fontSize: '0.78rem' }}>
-                            <span style={{ color: 'var(--text-secondary)' }}>Vence: <strong>{formatearFecha(cli.fechaVencimiento)}</strong></span>
-                            {renderExpiryTag(p.diasRestantes)}
+                          {/* Fila 2: Vencimiento y Estado */}
+                          <div className="mobile-subitem-dates">
+                            <div className="mobile-subitem-due">
+                              <span className="mobile-due-label">Vence:</span>
+                              <span className="mobile-due-val">{formatearFecha(cli.fechaVencimiento)}</span>
+                            </div>
+                            <div className="mobile-subitem-status">
+                              {renderExpiryTag(p.diasRestantes)}
+                            </div>
                           </div>
 
-                          {/* Acciones de la pantalla */}
-                          <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                          {/* Fila 3: Acciones Principales (50% / 50%) */}
+                          <div className="mobile-actions-primary">
                             <button
                               type="button"
-                              className="btn btn-secondary mobile-mini-action"
+                              className={`btn-mobile-primary-action wa ${p.esUrgente ? 'pulse-attention' : ''}`}
                               onClick={() => onOpenWhatsApp(cli, prf, cta)}
-                              title="Aviso WhatsApp"
+                              title={`Enviar mensaje de WhatsApp para ${plat.name}`}
                             >
-                              <WhatsAppIcon size={13} color="#22c55e" />
-                              <span>Aviso</span>
+                              <WhatsAppIcon size={16} color="#ffffff" />
+                              <span>{p.esUrgente ? 'Aviso Urgente' : 'WhatsApp'}</span>
+                              {cli.recordatorioEnviado && <span className="wa-sent-check">✓✓</span>}
                             </button>
+
                             <button
                               type="button"
-                              className="btn btn-secondary mobile-mini-action"
+                              className="btn-mobile-primary-action renew"
+                              onClick={() => onRenewClient(cli.id)}
+                              title="Renovar membresía por 30 días más"
+                            >
+                              <RefreshCw size={14} />
+                              <span>Renovar +30d</span>
+                            </button>
+                          </div>
+
+                          {/* Fila 4: Acciones Secundarias (33.3% / 33.3% / 33.3%) */}
+                          <div className="mobile-actions-secondary">
+                            <button
+                              type="button"
+                              className="btn-mobile-sec-action"
                               onClick={() => onOpenReceipt && onOpenReceipt(cli, prf, cta)}
-                              title="Recibo"
+                              title="Emitir Recibo Digital"
                             >
                               <Receipt size={13} />
                               <span>Recibo</span>
                             </button>
+
                             <button
                               type="button"
-                              className="btn btn-secondary mobile-mini-action"
+                              className="btn-mobile-sec-action"
                               onClick={() => onEditClient && onEditClient(cli)}
-                              title="Editar"
+                              title="Editar cliente o PIN"
                             >
                               <Edit size={13} />
                               <span>Editar</span>
                             </button>
+
                             <button
                               type="button"
-                              className="btn btn-secondary mobile-mini-action"
-                              onClick={() => onRenewClient(cli.id)}
-                              title="Renovar +30d"
-                            >
-                              <RefreshCw size={13} />
-                              <span>+30d</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-secondary mobile-mini-action"
+                              className="btn-mobile-sec-action delete"
                               onClick={() => onDeleteClient(cli)}
-                              title="Baja"
+                              title="Dar de baja y liberar perfil"
                             >
                               <UserMinus size={13} />
                               <span>Baja</span>

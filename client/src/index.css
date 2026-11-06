@@ -8685,27 +8685,225 @@ h1, h2, h3, h4, h5, h6 {
    ========================================================================== */
 
 .client-card-block.mobile {
-  border-radius: 10px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .client-card-header.mobile {
-  padding: 12px 14px 6px 14px;
-  border-bottom: none;
+  padding: 12px 14px 8px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.btn-card-assign-mobile {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.16);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  color: #c7d2fe;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-card-assign-mobile:hover {
+  background: rgba(99, 102, 241, 0.28);
+  border-color: rgba(99, 102, 241, 0.7);
+  color: #ffffff;
+}
+
+/* Tarjeta individual de cada servicio/pantalla */
 .mobile-subitem-card {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 10px;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.mobile-mini-action {
-  font-size: 0.72rem !important;
-  padding: 4px 8px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 4px !important;
+.mobile-subitem-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mobile-subitem-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.mobile-subitem-logo {
+  height: 24px;
+  max-width: 65px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.mobile-subitem-profile-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mobile-subitem-profile-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-subitem-account-email {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-subitem-pin-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.pin-badge.mobile {
+  font-size: 0.76rem;
+  padding: 3px 7px;
+  font-weight: 700;
+}
+
+.mobile-subitem-dates {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mobile-subitem-due {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+}
+
+.mobile-due-label {
+  color: var(--text-muted);
+}
+
+.mobile-due-val {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* Fila de botones principales (WhatsApp y Renovar 30d) - 50% cada uno */
+.mobile-actions-primary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn-mobile-primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-mobile-primary-action.wa {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-mobile-primary-action.wa:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.45);
+}
+
+.btn-mobile-primary-action.renew {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  color: #c7d2fe;
+}
+
+.btn-mobile-primary-action.renew:hover {
+  background: rgba(99, 102, 241, 0.28);
+  border-color: rgba(99, 102, 241, 0.7);
+  color: #ffffff;
+}
+
+/* Fila de botones secundarios (Recibo, Editar, Baja) - 33.3% cada uno */
+.mobile-actions-secondary {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+}
+
+.btn-mobile-sec-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 4px;
+  border-radius: 7px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-mobile-sec-action:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.btn-mobile-sec-action.delete {
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.22);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.btn-mobile-sec-action.delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.45);
 }
 
 /* ==========================================================================
@@ -8799,10 +8997,47 @@ h1, h2, h3, h4, h5, h6 {
   background: #f8fafc !important;
 }
 
+[data-theme="light"] .btn-card-assign-mobile {
+  background: #f5f3ff !important;
+  border-color: #c7d2fe !important;
+  color: #4f46e5 !important;
+}
+
 [data-theme="light"] .mobile-subitem-card {
   background: #ffffff !important;
   border-color: #e2e8f0 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .mobile-subitem-profile-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .mobile-subitem-dates {
+  border-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .btn-mobile-primary-action.renew {
+  background: #eef2ff !important;
+  border-color: #c7d2fe !important;
+  color: #4338ca !important;
+}
+
+[data-theme="light"] .btn-mobile-sec-action {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .btn-mobile-sec-action:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .btn-mobile-sec-action.delete {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
 }
 
 [data-theme="light"] .pill-btn.pill-phone-toggle {
