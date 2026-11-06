@@ -150,7 +150,7 @@ export default function App() {
   // Selecciones para acciones específicas
   const [whatsAppSelection, setWhatsAppSelection] = useState({ cliente: null, perfil: null, cuenta: null, initialTemplate: null });
   const [receiptSelection, setReceiptSelection] = useState({ cliente: null, perfil: null, cuenta: null });
-  const [preselectedSlot, setPreselectedSlot] = useState({ cuentaId: null, perfilId: null });
+  const [preselectedSlot, setPreselectedSlot] = useState({ cuentaId: null, perfilId: null, cliente: null });
 
   // Escuchar evento de instalación PWA
   useEffect(() => {
@@ -819,13 +819,7 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
         <div className="app-container">
           {/* 1. Barra de Navegación Principal */}
           <Navbar 
-            onNewClient={() => { setPreselectedSlot({ cuentaId: null, perfilId: null }); setIsNewClientOpen(true); }}
-            onNewAccount={() => setIsNewAccountOpen(true)}
-            urgentCount={urgentClients.length}
-            onFilterUrgent={() => { setActiveTab('clientes'); setClientFilter('por_vencer'); }}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
-            onGoToCodes={() => setActiveTab('codigos')}
-            onLockAdmin={handleLockAdmin}
           />
 
           {/* 2. Banner de Alerta Urgente (≤ 2 Días) */}
@@ -855,7 +849,14 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
               onRenewClient={handleRenewClient}
               onDeleteClient={handleOpenDeleteClient}
               onEditClient={handleOpenEditClient}
-              onNewClient={() => { setPreselectedSlot({ cuentaId: null, perfilId: null }); setIsNewClientOpen(true); }}
+              onNewClient={(slotData) => {
+                setPreselectedSlot({
+                  cuentaId: slotData?.cuentaId || null,
+                  perfilId: slotData?.perfilId || null,
+                  cliente: slotData?.cliente || null
+                });
+                setIsNewClientOpen(true);
+              }}
               activeFilter={clientFilter}
               onFilterChange={setClientFilter}
             />
@@ -905,16 +906,17 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
 
           {/* Modales */}
           <NewClientModal 
-            key={isNewClientOpen ? `client-${preselectedSlot?.cuentaId || 'all'}-${preselectedSlot?.perfilId || 'new'}` : 'client-closed'}
+            key={isNewClientOpen ? `client-${preselectedSlot?.cuentaId || 'all'}-${preselectedSlot?.perfilId || 'new'}-${preselectedSlot?.cliente?.key || 'new'}` : 'client-closed'}
             isOpen={isNewClientOpen}
             onClose={() => {
               setIsNewClientOpen(false);
-              setPreselectedSlot({ cuentaId: null, perfilId: null });
+              setPreselectedSlot({ cuentaId: null, perfilId: null, cliente: null });
             }}
             cuentas={cuentas}
             onSaveClient={handleSaveClient}
-            preselectedCuentaId={preselectedSlot.cuentaId}
-            preselectedPerfilId={preselectedSlot.perfilId}
+            preselectedCuentaId={preselectedSlot?.cuentaId}
+            preselectedPerfilId={preselectedSlot?.perfilId}
+            preselectedClient={preselectedSlot?.cliente}
           />
 
           <EditClientModal 

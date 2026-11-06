@@ -9,7 +9,8 @@ export function NewClientModal({
   cuentas = [], 
   onSaveClient, 
   preselectedPerfilId = null,
-  preselectedCuentaId = null 
+  preselectedCuentaId = null,
+  preselectedClient = null 
 }) {
   const [codigoPais, setCodigoPais] = useState('+51');
   const [celular, setCelular] = useState('');
@@ -32,8 +33,16 @@ export function NewClientModal({
   useEffect(() => {
     if (isOpen) {
       setErrorMsg('');
-      setNombre('');
-      setCelular('');
+      if (preselectedClient) {
+        setNombre(preselectedClient.nombre || '');
+        setCelular(preselectedClient.celular || '');
+        if (preselectedClient.codigoPais) {
+          setCodigoPais(preselectedClient.codigoPais);
+        }
+      } else {
+        setNombre('');
+        setCelular('');
+      }
       setNotas('');
       setFechaInicio(getTodayDate());
       setFechaVencimiento(addDays(getTodayDate(), 30)); // Requerimiento: 30 días de duración
@@ -58,7 +67,7 @@ export function NewClientModal({
         setPin('');
       }
     }
-  }, [isOpen, preselectedCuentaId, preselectedPerfilId]);
+  }, [isOpen, preselectedCuentaId, preselectedPerfilId, preselectedClient]);
 
   // Al cambiar la cuenta seleccionada
   const handleCambiarCuenta = (ctaId) => {

@@ -1,21 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, 
-  MessageCircle, 
   RefreshCw, 
   UserMinus, 
   Copy, 
   Check, 
-  Phone, 
-  Calendar, 
-  KeyRound, 
-  AlertTriangle, 
   Clock, 
   CheckCircle2, 
+  AlertTriangle, 
   Plus, 
   Sparkles,
   Edit,
-  Receipt
+  Receipt,
+  KeyRound,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { PLATFORMS } from '../constants/platforms';
 import { calcularDiasRestantes, formatearFecha } from '../utils/storage';
@@ -38,81 +37,238 @@ export function ClientsView({
   const toast = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [celularCopiado, setCelularCopiado] = useState(null);
+  const [pinCopiado, setPinCopiado] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Mapeo rápido de cuenta y perfil por ID
-  const cuentasMap = {};
-  const perfilesMap = {};
+  // Estado para visibilidad de números de celular (Oculto por defecto con ojito)
+  const [visiblesTelefonos, setVisiblesTelefonos] = useState(() => new Set());
+  const [showAllPhones, setShowAllPhones] = useState(false);
 
-  cuentas.forEach(cta => {
-    if (cta.id != null) {
-      cuentasMap[cta.id] = cta;
-      cuentasMap[String(cta.id)] = cta;
-    }
-    (cta.perfiles || []).forEach(p => {
-      if (p.id != null) {
-        perfilesMap[p.id] = { ...p, cuenta: cta };
-        perfilesMap[String(p.id)] = { ...p, cuenta: cta };
+  // 1. Mapeo rápido de cuentas y perfiles por ID
+  const cuentasMap = useMemo(() => {
+    const map = {};
+    cuentas.forEach(cta => {
+      if (cta.id != null) {
+        map[cta.id] = cta;
+        map[String(cta.id)] = cta;
       }
     });
-  });
+    return map;
+  }, [cuentas]);
 
-  // Filtrado y búsqueda
-  const clientesFiltrados = clientes.filter(cli => {
-    const dias = calcularDiasRestantes(cli.fechaVencimiento);
-    const perfilInfo = perfilesMap[cli.perfilId];
-    const cuentaInfo = cuentasMap[cli.cuentaId] || perfilInfo?.cuenta;
+  const perfilesMap = useMemo(() => {
+    const map = {};
+    cuentas.forEach(cta => {
+      (cta.perfiles || []).forEach(p => {
+        if (p.id != null) {
+          map[p.id] = { ...p, cuenta: cta };
+          map[String(p.id)] = { ...p, cuenta: cta };
+        }
+      });
+    });
+    return map;
+  }, [cuentas]);
 
-    // Filtro por pestaña
-    if (activeFilter === 'por_vencer' && (dias > 2 || dias < 0)) return false;
-    if (activeFilter === 'vencidos' && dias >= 0) return false;
-    if (activeFilter === 'activos' && dias < 0) return false;
+  // 2. Agrupación inteligente de suscripciones por Cliente único
+  const clientGroups = useMemo(() => {
+    const map = new Map();
+    const groups = [];
 
-    // Filtro por búsqueda
-    if (!searchTerm.trim()) return true;
-    const term = searchTerm.toLowerCase();
-    const nombre = (cli.nombre || '').toLowerCase();
-    const cel = (cli.celular || '').toLowerCase();
-    const plat = (cuentaInfo?.plataforma || '').toLowerCase();
-    const prfNom = (perfilInfo?.nombre || '').toLowerCase();
-    const pin = (cli.pin || '').toLowerCase();
+    clientes.forEach(cli => {
+      const rawPhone = (cli.celular || '').replace(/\D/g, '');
+      const codPais = (cli.codigoPais || '+51').trim();
+      // Clave única: si tiene celular con 6+ dígitos se agrupa por país+número; de lo contrario por nombre
+      const groupKey = rawPhone.length >= 6 
+        ? `${codPais}-${rawPhone}`
+        : `name-${(cli.nombre || 'cliente').trim().toLowerCase()}`;
 
-    return (
-      nombre.includes(term) ||
-      cel.includes(term) ||
-      plat.includes(term) ||
-      prfNom.includes(term) ||
-      pin.includes(term)
-    );
-  });
+      const diasRestantes = calcularDiasRestantes(cli.fechaVencimiento);
+      const perfilInfo = perfilesMap[cli.perfilId];
+      const cuentaInfo = cuentasMap[cli.cuentaId] || perfilInfo?.cuenta;
+      const platformInfo = cuentaInfo ? PLATFORMS[cuentaInfo.plataforma] || PLATFORMS.Otro : PLATFORMS.Otro;
+      const esUrgente = diasRestantes >= 0 && diasRestantes <= 2;
+      const esVencido = diasRestantes < 0;
+
+      const subItem = {
+        cliente: cli,
+        perfilInfo,
+        cuentaInfo,
+        platformInfo,
+        diasRestantes,
+        esUrgente,
+        esVencido
+      };
+
+      if (!map.has(groupKey)) {
+        const newGroup = {
+          key: groupKey,
+          nombre: cli.nombre || 'Cliente',
+          celular: cli.celular || '',
+          codigoPais: codPais,
+          plataformas: [subItem]
+        };
+        map.set(groupKey, newGroup);
+        groups.push(newGroup);
+      } else {
+        const existingGroup = map.get(groupKey);
+        if ((!existingGroup.nombre || existingGroup.nombre === 'Cliente') && cli.nombre) {
+          existingGroup.nombre = cli.nombre;
+        }
+        existingGroup.plataformas.push(subItem);
+      }
+    });
+
+    // Calcular estadísticas consolidadas por cliente
+    groups.forEach(g => {
+      // Ordenar plataformas: las que vencen antes o ya vencieron van primero
+      g.plataformas.sort((a, b) => a.diasRestantes - b.diasRestantes);
+
+      g.plataformaCritica = g.plataformas[0];
+      g.minDiasRestantes = g.plataformaCritica?.diasRestantes ?? 999;
+      g.proximoVencimiento = g.plataformaCritica?.cliente?.fechaVencimiento;
+
+      g.tieneUrgente = g.plataformas.some(p => p.esUrgente);
+      g.tieneVencido = g.plataformas.some(p => p.esVencido);
+      g.tieneActivo = g.plataformas.some(p => !p.esVencido);
+
+      g.totalPlataformas = g.plataformas.length;
+    });
+
+    return groups;
+  }, [clientes, cuentasMap, perfilesMap]);
+
+  // 3. Filtrado por estado y término de búsqueda
+  const gruposFiltrados = useMemo(() => {
+    return clientGroups.filter(g => {
+      // Filtro por pestaña
+      if (activeFilter === 'por_vencer' && !g.tieneUrgente) return false;
+      if (activeFilter === 'vencidos' && !g.tieneVencido) return false;
+      if (activeFilter === 'activos' && !g.tieneActivo) return false;
+
+      // Filtro por búsqueda
+      if (!searchTerm.trim()) return true;
+      const term = searchTerm.toLowerCase();
+
+      const nombreMatch = (g.nombre || '').toLowerCase().includes(term);
+      const celMatch = `${g.codigoPais} ${g.celular}`.toLowerCase().includes(term);
+
+      // Buscar también dentro de los detalles de las plataformas asignadas
+      const platMatch = g.plataformas.some(p => {
+        const platName = (p.platformInfo?.name || p.cuentaInfo?.plataforma || '').toLowerCase();
+        const prfNom = (p.perfilInfo?.nombre || '').toLowerCase();
+        const pin = (p.cliente?.pin || p.perfilInfo?.pin || '').toLowerCase();
+        return platName.includes(term) || prfNom.includes(term) || pin.includes(term);
+      });
+
+      return nombreMatch || celMatch || platMatch;
+    });
+  }, [clientGroups, activeFilter, searchTerm]);
 
   // Resetear a la página 1 cuando cambia el filtro o término de búsqueda
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, activeFilter]);
 
-  // Cálculo de paginación
-  const totalItems = clientesFiltrados.length;
+  // Conteo de grupos por categorías
+  const urgentCount = useMemo(() => clientGroups.filter(g => g.tieneUrgente).length, [clientGroups]);
+  const expiredCount = useMemo(() => clientGroups.filter(g => g.tieneVencido).length, [clientGroups]);
+  const activeCount = useMemo(() => clientGroups.filter(g => g.tieneActivo).length, [clientGroups]);
+
+  // Paginación por Tarjeta de Cliente
+  const totalItems = gruposFiltrados.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
-  const paginatedClientes = clientesFiltrados.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedGrupos = gruposFiltrados.slice(startIndex, startIndex + itemsPerPage);
 
-  // Conteo de por vencer a 2 días o menos
-  const urgentCount = clientes.filter(c => {
-    const d = calcularDiasRestantes(c.fechaVencimiento);
-    return d >= 0 && d <= 2;
-  }).length;
+  // Alternar visibilidad de teléfono individual
+  const togglePhoneVisibility = (key, e) => {
+    if (e) e.stopPropagation();
+    setVisiblesTelefonos(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
 
-  const expiredCount = clientes.filter(c => calcularDiasRestantes(c.fechaVencimiento) < 0).length;
-  const activeCount = clientes.filter(c => calcularDiasRestantes(c.fechaVencimiento) >= 0).length;
+  // Alternar visibilidad global de todos los teléfonos
+  const handleToggleAllPhones = () => {
+    if (showAllPhones) {
+      setVisiblesTelefonos(new Set());
+      setShowAllPhones(false);
+    } else {
+      const all = new Set(clientGroups.map(g => g.key));
+      setVisiblesTelefonos(all);
+      setShowAllPhones(true);
+    }
+  };
 
-  const handleCopiarCelular = (celular, id) => {
+  // Formato del teléfono (Oculto / Visible)
+  const renderMaskedPhone = (codigoPais, celular, isVisible) => {
+    if (!celular) return 'Sin número';
+    if (isVisible) {
+      return `${codigoPais} ${celular}`;
+    }
+    return `${codigoPais} ••• ••• •••`;
+  };
+
+  const handleCopiarCelular = (celular, id, e) => {
+    if (e) e.stopPropagation();
     navigator.clipboard.writeText(celular);
     setCelularCopiado(id);
     toast.success('Número de WhatsApp copiado al portapapeles');
     setTimeout(() => setCelularCopiado(null), 2000);
+  };
+
+  const handleCopiarPin = (pin, id, e) => {
+    if (e) e.stopPropagation();
+    if (!pin) return;
+    navigator.clipboard.writeText(pin);
+    setPinCopiado(id);
+    toast.success(`PIN ${pin} copiado`);
+    setTimeout(() => setPinCopiado(null), 2000);
+  };
+
+  // Helper para renderizar el tag de vencimiento
+  const renderExpiryTag = (diasRestantes) => {
+    if (diasRestantes < 0) {
+      return (
+        <span className="expiry-tag expired">
+          ⛔ Venció hace {Math.abs(diasRestantes)} {Math.abs(diasRestantes) === 1 ? 'día' : 'días'}
+        </span>
+      );
+    }
+    if (diasRestantes === 0) {
+      return (
+        <span className="expiry-tag urgent-today pulse-attention" title="Su membresía vence hoy">
+          🔥 Vence hoy
+        </span>
+      );
+    }
+    if (diasRestantes === 1) {
+      return (
+        <span className="expiry-tag urgent-2 pulse-amber" title="Falta 1 día para que acabe su membresía">
+          ⚠️ Vence en 1 día
+        </span>
+      );
+    }
+    if (diasRestantes === 2) {
+      return (
+        <span className="expiry-tag urgent-2 pulse-amber" title="Faltan exactamente 2 días">
+          ⚠️ Vence en 2 días
+        </span>
+      );
+    }
+    return (
+      <span className="expiry-tag active">
+        🟢 Vence en {diasRestantes} días
+      </span>
+    );
   };
 
   return (
@@ -125,7 +281,7 @@ export function ClientsView({
           <input 
             type="text"
             className="search-input"
-            placeholder="Buscar por celular, nombre, plataforma o PIN..."
+            placeholder="Buscar por cliente, celular, plataforma o PIN..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -138,7 +294,7 @@ export function ClientsView({
             onClick={() => onFilterChange('todos')}
           >
             <span>Todos</span>
-            <span className="counter-badge">{clientes.length}</span>
+            <span className="counter-badge">{clientGroups.length}</span>
           </button>
 
           <button 
@@ -147,9 +303,7 @@ export function ClientsView({
           >
             <Clock size={14} />
             <span>Por Vencer (≤ 2 Días)</span>
-            <span className="counter-badge">
-              {urgentCount}
-            </span>
+            <span className="counter-badge">{urgentCount}</span>
           </button>
 
           <button 
@@ -170,15 +324,30 @@ export function ClientsView({
             <span className="counter-badge">{expiredCount}</span>
           </button>
 
-          <button className="btn btn-primary" onClick={onNewClient} style={{ padding: '7px 14px', fontSize: '0.82rem' }}>
+          {/* Botón para ver u ocultar números de celular */}
+          <button 
+            type="button" 
+            className={`pill-btn pill-phone-toggle ${showAllPhones ? 'active' : ''}`}
+            onClick={handleToggleAllPhones}
+            title={showAllPhones ? 'Ocultar todos los celulares' : 'Mostrar todos los celulares'}
+          >
+            {showAllPhones ? <EyeOff size={14} /> : <Eye size={14} />}
+            <span>{showAllPhones ? 'Ocultar Números' : 'Ver Números'}</span>
+          </button>
+
+          <button 
+            className="btn btn-primary" 
+            onClick={() => onNewClient()} 
+            style={{ padding: '7px 14px', fontSize: '0.82rem' }}
+          >
             <Plus size={16} />
             <span>+ Asignar Cliente</span>
           </button>
         </div>
       </div>
 
-      {/* Tabla de Clientes (Desktop / Tablet) y Cards (Móvil) */}
-      {clientesFiltrados.length === 0 ? (
+      {/* Contenido Principal: Bloques de Tarjetas por Cliente (Todo Visible, Cero Clics Extras) */}
+      {gruposFiltrados.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">
             <Search size={28} />
@@ -188,421 +357,473 @@ export function ClientsView({
             {searchTerm 
               ? `No hay resultados para "${searchTerm}". Intenta con otro criterio.`
               : activeFilter === 'por_vencer'
-              ? '¡Excelente! Ningún cliente está a 2 días o menos de vencer en este momento.'
+              ? '¡Excelente! Ningún cliente tiene suscripciones a 2 días o menos de vencer.'
               : 'Aún no tienes clientes registrados en este estado.'}
           </p>
-          <button className="btn btn-primary" onClick={onNewClient}>
+          <button className="btn btn-primary" onClick={() => onNewClient()}>
             <Plus size={16} />
             <span>Asignar tu primer cliente</span>
           </button>
         </div>
       ) : (
         <>
-          {/* VISTA 1: TABLA TRADICIONAL (Visible en Desktop y Tablets > 768px) */}
-          <div className="table-responsive desktop-only-view">
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>Cliente / Celular</th>
-                  <th>Plataforma & Perfil</th>
-                  <th>PIN</th>
-                  <th>Fecha Inicio</th>
-                  <th>Vencimiento (30 días)</th>
-                  <th>Estado & Alerta</th>
-                  <th style={{ textAlign: 'center' }}>WhatsApp Directo</th>
-                  <th style={{ textAlign: 'center' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedClientes.map((cli) => {
-                  const diasRestantes = calcularDiasRestantes(cli.fechaVencimiento);
-                  const perfilInfo = perfilesMap[cli.perfilId];
-                  const cuentaInfo = cuentasMap[cli.cuentaId] || perfilInfo?.cuenta;
-                  const platformInfo = cuentaInfo ? PLATFORMS[cuentaInfo.plataforma] || PLATFORMS.Otro : PLATFORMS.Otro;
-                  const esUrgente = diasRestantes >= 0 && diasRestantes <= 2;
-                  const esVencido = diasRestantes < 0;
-
-                  return (
-                    <tr 
-                      key={cli.id} 
-                      className={esUrgente ? 'row-urgent' : esVencido ? 'row-expired' : ''}
-                    >
-                      {/* Celular y Nombre */}
-                      <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                          <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.92rem' }}>
-                            {cli.nombre || 'Cliente'}
-                          </span>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                            <span style={{ 
-                              fontFamily: 'var(--font-mono)', 
-                              fontSize: '0.8rem', 
-                              color: 'var(--text-secondary)' 
-                            }}>
-                              {cli.codigoPais} {cli.celular}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleCopiarCelular(`${cli.codigoPais}${cli.celular}`, cli.id)}
-                              title="Copiar número de WhatsApp"
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: celularCopiado === cli.id ? '#34d399' : '#64748b',
-                                cursor: 'pointer',
-                                padding: '2px'
-                              }}
-                            >
-                              {celularCopiado === cli.id ? <Check size={13} /> : <Copy size={13} />}
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Plataforma y Perfil */}
-                      <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                          {platformInfo.logo ? (
-                            <img
-                              src={platformInfo.logo}
-                              alt={platformInfo.name}
-                              title={platformInfo.name}
-                              style={{
-                                height: '28px',
-                                maxWidth: '65px',
-                                objectFit: 'contain',
-                                borderRadius: '5px',
-                                display: 'block',
-                                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.12)'
-                              }}
-                            />
-                          ) : (
-                            <span 
-                              className="platform-pill"
-                              data-platform={platformInfo.id}
-                              style={{
-                                backgroundColor: platformInfo.badgeBg,
-                                color: platformInfo.textColor,
-                                borderColor: platformInfo.borderColor
-                              }}
-                            >
-                              {platformInfo.name}
-                            </span>
-                          )}
-                          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                            {perfilInfo?.nombre || `Perfil ${perfilInfo?.numero || '?'}`}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* PIN Asignado */}
-                      <td>
-                        <span className="pin-badge">
-                          {cli.pin || perfilInfo?.pin || '----'}
-                        </span>
-                      </td>
-
-                      {/* Fecha de Inicio */}
-                      <td>
-                        <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                          {formatearFecha(cli.fechaInicio)}
-                        </span>
-                      </td>
-
-                      {/* Fecha de Vencimiento (30 días) */}
-                      <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                          <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                            {formatearFecha(cli.fechaVencimiento)}
-                          </span>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                            Plan de 30 días
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Estado & Días restantes */}
-                      <td>
-                        {diasRestantes < 0 && (
-                          <span className="expiry-tag expired">
-                            ⛔ Venció hace {Math.abs(diasRestantes)} {Math.abs(diasRestantes) === 1 ? 'día' : 'días'}
-                          </span>
-                        )}
-                        {diasRestantes === 0 && (
-                          <span className="expiry-tag urgent-today pulse-attention" title="Su membresía vence hoy">
-                            🔥 Vence hoy
-                          </span>
-                        )}
-                        {diasRestantes === 1 && (
-                          <span className="expiry-tag urgent-2 pulse-amber" title="Falta 1 día para que acabe su membresía">
-                            ⚠️ Vence en 1 día
-                          </span>
-                        )}
-                        {diasRestantes === 2 && (
-                          <span className="expiry-tag urgent-2 pulse-amber" title="Faltan exactamente 2 días para que acabe su membresía">
-                            ⚠️ Vence en 2 días
-                          </span>
-                        )}
-                        {diasRestantes > 2 && (
-                          <span className="expiry-tag active">
-                            🟢 Vence en {diasRestantes} días
-                          </span>
-                        )}
-                      </td>
-
-                      {/* ICONO Y BOTÓN DE WHATSAPP DIRECTO */}
-                      <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                          <button
-                            type="button"
-                            className={`btn-whatsapp-icon ${esUrgente ? 'pulse-attention' : ''}`}
-                            onClick={() => onOpenWhatsApp(cli, perfilInfo, cuentaInfo)}
-                            title={
-                              esUrgente
-                                ? '¡ALERTA 2 DÍAS! Clic para enviar recordatorio de vencimiento por WhatsApp'
-                                : 'Enviar mensaje o datos por WhatsApp'
-                            }
-                          >
-                            <WhatsAppIcon size={20} color="#ffffff" />
-                          </button>
-
-                          {cli.recordatorioEnviado && (
-                            <span title="Recordatorio ya enviado" style={{ color: '#34d399', fontSize: '0.72rem' }}>
-                              ✓✓
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Acciones: Comprobante, Editar, Renovar (+30 días) y Liberar perfil */}
-                      <td>
-                        <div className="action-buttons-group" style={{ justifyContent: 'center' }}>
-                          <button
-                            type="button"
-                            className="btn-icon-action receipt"
-                            onClick={() => onOpenReceipt && onOpenReceipt(cli, perfilInfo, cuentaInfo)}
-                            title="Emitir Comprobante / Recibo Digital Oficial para WhatsApp"
-                          >
-                            <Receipt size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-icon-action edit"
-                            onClick={() => onEditClient && onEditClient(cli)}
-                            title="Editar cliente, cambiar PIN o fecha de vencimiento"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-icon-action renew"
-                            onClick={() => onRenewClient(cli.id)}
-                            title="Renovar membresía por 30 días más"
-                          >
-                            <RefreshCw size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-icon-action delete"
-                            onClick={() => onDeleteClient(cli)}
-                            title="Dar de baja al cliente y liberar su perfil"
-                          >
-                            <UserMinus size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* VISTA 2: TARJETAS MÓVILES TÁCTILES (Especial para Celular <= 768px) */}
-          <div className="mobile-cards-view">
-            {paginatedClientes.map((cli) => {
-              const diasRestantes = calcularDiasRestantes(cli.fechaVencimiento);
-              const perfilInfo = perfilesMap[cli.perfilId];
-              const cuentaInfo = cuentasMap[cli.cuentaId] || perfilInfo?.cuenta;
-              const platformInfo = cuentaInfo ? PLATFORMS[cuentaInfo.plataforma] || PLATFORMS.Otro : PLATFORMS.Otro;
-              const esUrgente = diasRestantes >= 0 && diasRestantes <= 2;
-              const esVencido = diasRestantes < 0;
+          {/* ========================================================================= */}
+          {/* VISTA 1: BLOQUES DE CLIENTES DESKTOP / TABLET (> 768px)                   */}
+          {/* ========================================================================= */}
+          <div className="client-blocks-container desktop-only-view">
+            {paginatedGrupos.map((g) => {
+              const platCritica = g.plataformaCritica;
+              const esUrgente = g.tieneUrgente;
+              const esVencido = g.tieneVencido;
+              const initialLetter = (g.nombre || 'C').charAt(0).toUpperCase();
+              const isPhoneVisible = showAllPhones || visiblesTelefonos.has(g.key);
 
               return (
                 <div 
-                  key={cli.id} 
-                  className={`client-mobile-card ${esUrgente ? 'card-urgent' : esVencido ? 'card-expired' : ''}`}
+                  key={g.key} 
+                  className={`client-card-block ${esUrgente ? 'block-urgent' : esVencido ? 'block-expired' : ''}`}
                 >
-                  {/* Fila Superior: Plataforma + Perfil + PIN */}
-                  <div className="mobile-card-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      {platformInfo.logo ? (
-                        <img
-                          src={platformInfo.logo}
-                          alt={platformInfo.name}
-                          title={platformInfo.name}
-                          style={{
-                            height: '24px',
-                            maxWidth: '55px',
-                            objectFit: 'contain',
-                            borderRadius: '4px',
-                            display: 'block',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)'
-                          }}
-                        />
-                      ) : (
-                        <span 
-                          className="platform-pill"
-                          data-platform={platformInfo.id}
-                          style={{
-                            backgroundColor: platformInfo.badgeBg,
-                            color: platformInfo.textColor,
-                            borderColor: platformInfo.borderColor,
-                            fontSize: '0.75rem'
-                          }}
-                        >
-                          {platformInfo.name}
-                        </span>
-                      )}
-                      <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                        {perfilInfo?.nombre || `Perfil ${perfilInfo?.numero || '?'}`}
-                      </span>
-                    </div>
+                  {/* 1. Cabecera del Bloque del Cliente */}
+                  <div className="client-card-header">
+                    {/* Izquierda: Avatar + Nombre + Celular (con ojito y copiar) + Badge de plataformas */}
+                    <div className="client-header-left">
+                      <div className="client-avatar-badge" title={g.nombre}>
+                        {initialLetter}
+                      </div>
 
-                    <span className="pin-badge">
-                      PIN: {cli.pin || perfilInfo?.pin || '----'}
-                    </span>
-                  </div>
+                      <div className="client-header-info">
+                        <div className="client-name-row">
+                          <span className="client-name-title">{g.nombre}</span>
+                          {g.totalPlataformas > 1 ? (
+                            <span className="multi-plat-badge" title={`Tiene ${g.totalPlataformas} servicios contratados`}>
+                              <Sparkles size={11} />
+                              <span>{g.totalPlataformas} plataformas</span>
+                            </span>
+                          ) : (
+                            <span className="single-plat-badge">
+                              1 plataforma
+                            </span>
+                          )}
+                        </div>
 
-                  {/* Fila Central: Datos del Cliente */}
-                  <div className="mobile-card-body">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <h4 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-light)', marginBottom: '2px' }}>
-                          {cli.nombre || 'Cliente'}
-                        </h4>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                            {cli.codigoPais} {cli.celular}
+                        <div className="client-phone-row">
+                          <span className={`client-phone-number ${!isPhoneVisible ? 'is-masked' : ''}`}>
+                            {renderMaskedPhone(g.codigoPais, g.celular, isPhoneVisible)}
                           </span>
                           <button
                             type="button"
-                            onClick={() => handleCopiarCelular(`${cli.codigoPais}${cli.celular}`, cli.id)}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: celularCopiado === cli.id ? '#34d399' : '#64748b',
-                              cursor: 'pointer',
-                              padding: '2px'
-                            }}
-                            title="Copiar número"
+                            className="btn-eye-inline"
+                            onClick={(e) => togglePhoneVisibility(g.key, e)}
+                            title={isPhoneVisible ? 'Ocultar número de celular' : 'Ver número de celular'}
                           >
-                            {celularCopiado === cli.id ? <Check size={14} /> : <Copy size={14} />}
+                            {isPhoneVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-copy-inline"
+                            onClick={(e) => handleCopiarCelular(`${g.codigoPais}${g.celular}`, g.key, e)}
+                            title="Copiar WhatsApp al portapapeles"
+                          >
+                            {celularCopiado === g.key ? <Check size={12} className="text-emerald" /> : <Copy size={12} />}
                           </button>
                         </div>
                       </div>
-
-                      {/* Tag de vencimiento */}
-                      <div>
-                        {diasRestantes < 0 && (
-                          <span className="expiry-tag expired" style={{ fontSize: '0.75rem' }}>
-                            ⛔ Venció hace {Math.abs(diasRestantes)} {Math.abs(diasRestantes) === 1 ? 'día' : 'días'}
-                          </span>
-                        )}
-                        {diasRestantes === 0 && (
-                          <span className="expiry-tag urgent-today pulse-attention" style={{ fontSize: '0.75rem' }}>
-                            🔥 Vence hoy
-                          </span>
-                        )}
-                        {diasRestantes === 1 && (
-                          <span className="expiry-tag urgent-2 pulse-amber" style={{ fontSize: '0.75rem' }}>
-                            ⚠️ Vence en 1 día
-                          </span>
-                        )}
-                        {diasRestantes === 2 && (
-                          <span className="expiry-tag urgent-2 pulse-amber" style={{ fontSize: '0.75rem' }}>
-                            ⚠️ Vence en 2 días
-                          </span>
-                        )}
-                        {diasRestantes > 2 && (
-                          <span className="expiry-tag active" style={{ fontSize: '0.75rem' }}>
-                            🟢 Vence en {diasRestantes} días
-                          </span>
-                        )}
-                      </div>
                     </div>
 
-                    {/* Fechas de inicio y fin */}
-                    <div className="mobile-card-dates-row">
-                      <span>Inicio: <strong>{formatearFecha(cli.fechaInicio)}</strong></span>
-                      <span>Vence (30d): <strong>{formatearFecha(cli.fechaVencimiento)}</strong></span>
+                    {/* Derecha: Resumen de próximo corte + Botón + Asignar + Botón WhatsApp */}
+                    <div className="client-header-right">
+                      <div className="client-header-status">
+                        <span className="status-label">
+                          Próx. corte: <strong>{formatearFecha(g.proximoVencimiento)}</strong>
+                        </span>
+                        {renderExpiryTag(g.minDiasRestantes)}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn-card-assign"
+                        onClick={() => onNewClient({ cliente: g })}
+                        title={`Asignar otra plataforma a ${g.nombre}`}
+                      >
+                        <Plus size={14} />
+                        <span>+ Asignar pantalla</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`btn-whatsapp-header ${esUrgente ? 'pulse-attention' : ''}`}
+                        onClick={() => {
+                          if (platCritica) {
+                            onOpenWhatsApp(platCritica.cliente, platCritica.perfilInfo, platCritica.cuentaInfo);
+                          }
+                        }}
+                        title={`Enviar WhatsApp a ${g.nombre}`}
+                      >
+                        <WhatsAppIcon size={16} color="#ffffff" />
+                        <span>WhatsApp</span>
+                        {platCritica?.cliente?.recordatorioEnviado && (
+                          <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>✓✓</span>
+                        )}
+                      </button>
                     </div>
                   </div>
 
-                  {/* Fila Inferior: Botones de Acción Móviles (WhatsApp Gigante + Recibo + Renovar + Liberar) */}
-                  <div className="mobile-card-actions">
-                    <button
-                      type="button"
-                      className={`btn btn-whatsapp mobile-wa-btn ${esUrgente ? 'pulse-attention' : ''}`}
-                      onClick={() => onOpenWhatsApp(cli, perfilInfo, cuentaInfo)}
-                    >
-                      <WhatsAppIcon size={19} color="#ffffff" />
-                      <span>
-                        {esUrgente ? 'Avisar por WhatsApp' : 'Enviar WhatsApp'}
-                      </span>
-                      {cli.recordatorioEnviado && (
-                        <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>✓✓</span>
-                      )}
-                    </button>
+                  {/* 2. Subtabla con Todas las Pantallas del Cliente (100% VISIBLES de inmediato) */}
+                  <div className="client-card-table-wrapper">
+                    <table className="client-card-table">
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left', minWidth: '220px' }}>Plataforma & Perfil</th>
+                          <th style={{ textAlign: 'center', minWidth: '120px' }}>PIN de Acceso</th>
+                          <th style={{ textAlign: 'center', minWidth: '120px' }}>Fecha Inicio</th>
+                          <th style={{ textAlign: 'center', minWidth: '140px' }}>Vencimiento</th>
+                          <th style={{ textAlign: 'center', minWidth: '155px' }}>Estado</th>
+                          <th style={{ textAlign: 'center', width: '90px' }}>WhatsApp</th>
+                          <th style={{ textAlign: 'center', minWidth: '170px' }}>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {g.plataformas.map((p) => {
+                          const cli = p.cliente;
+                          const plat = p.platformInfo;
+                          const prf = p.perfilInfo;
+                          const cta = p.cuentaInfo;
+                          const dias = p.diasRestantes;
+                          const esItemUrgente = p.esUrgente;
+                          const esItemVencido = p.esVencido;
 
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary mobile-sub-btn receipt"
-                        onClick={() => onOpenReceipt && onOpenReceipt(cli, perfilInfo, cuentaInfo)}
-                        title="Emitir Comprobante Digital"
-                      >
-                        <Receipt size={14} />
-                        <span>Recibo</span>
-                      </button>
+                          return (
+                            <tr 
+                              key={cli.id}
+                              className={`client-table-row ${esItemUrgente ? 'row-item-urgent' : esItemVencido ? 'row-item-expired' : ''}`}
+                            >
+                              {/* Plataforma & Perfil */}
+                              <td style={{ textAlign: 'left' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  {plat.logo ? (
+                                    <img
+                                      src={plat.logo}
+                                      alt={plat.name}
+                                      title={plat.name}
+                                      style={{
+                                        height: '26px',
+                                        maxWidth: '65px',
+                                        objectFit: 'contain',
+                                        borderRadius: '4px',
+                                        display: 'block'
+                                      }}
+                                    />
+                                  ) : (
+                                    <span 
+                                      className="platform-pill"
+                                      data-platform={plat.id}
+                                      style={{
+                                        backgroundColor: plat.badgeBg,
+                                        color: plat.textColor,
+                                        borderColor: plat.borderColor,
+                                        fontSize: '0.75rem',
+                                        padding: '3px 8px'
+                                      }}
+                                    >
+                                      {plat.name}
+                                    </span>
+                                  )}
+                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                      {prf?.nombre || `Perfil ${prf?.numero || '?'}`}
+                                    </span>
+                                    {cta?.correo && (
+                                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                        {cta.correo}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
 
-                      <button
-                        type="button"
-                        className="btn btn-secondary mobile-sub-btn edit"
-                        onClick={() => onEditClient && onEditClient(cli)}
-                        title="Editar datos del cliente"
-                      >
-                        <Edit size={14} />
-                        <span>Editar</span>
-                      </button>
+                              {/* PIN de Acceso con botón copiar */}
+                              <td style={{ textAlign: 'center' }}>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                  <span className="pin-badge">
+                                    <KeyRound size={11} style={{ marginRight: '3px', opacity: 0.7 }} />
+                                    {cli.pin || prf?.pin || '----'}
+                                  </span>
+                                  {(cli.pin || prf?.pin) && (
+                                    <button
+                                      type="button"
+                                      className="btn-copy-inline"
+                                      onClick={(e) => handleCopiarPin(cli.pin || prf?.pin, cli.id, e)}
+                                      title="Copiar PIN"
+                                    >
+                                      {pinCopiado === cli.id ? <Check size={12} className="text-emerald" /> : <Copy size={12} />}
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
 
-                      <button
-                        type="button"
-                        className="btn btn-secondary mobile-sub-btn renew"
-                        onClick={() => onRenewClient(cli.id)}
-                        title="Renovar membresía por 30 días más"
-                      >
-                        <RefreshCw size={14} />
-                        <span>+30d</span>
-                      </button>
+                              {/* Fecha de Inicio */}
+                              <td style={{ textAlign: 'center' }}>
+                                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                                  {formatearFecha(cli.fechaInicio)}
+                                </span>
+                              </td>
 
-                      <button
-                        type="button"
-                        className="btn btn-secondary mobile-sub-btn delete"
-                        onClick={() => onDeleteClient(cli)}
-                        title="Dar de baja al cliente y liberar perfil"
-                      >
-                        <UserMinus size={14} />
-                        <span>Baja</span>
-                      </button>
-                    </div>
+                              {/* Vencimiento */}
+                              <td style={{ textAlign: 'center' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                  <span style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                    {formatearFecha(cli.fechaVencimiento)}
+                                  </span>
+                                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                    Plan de 30 días
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Estado Individual */}
+                              <td style={{ textAlign: 'center' }}>
+                                {renderExpiryTag(dias)}
+                              </td>
+
+                              {/* WhatsApp Directo de esta pantalla */}
+                              <td style={{ textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  className="btn-subrow-whatsapp"
+                                  onClick={() => onOpenWhatsApp(cli, prf, cta)}
+                                  title={`Enviar datos de ${plat.name} por WhatsApp`}
+                                >
+                                  <WhatsAppIcon size={15} color="#ffffff" />
+                                  <span>Avisar</span>
+                                </button>
+                              </td>
+
+                              {/* Acciones de la Pantalla */}
+                              <td style={{ textAlign: 'center' }}>
+                                <div className="action-buttons-group" style={{ justifyContent: 'center' }}>
+                                  <button
+                                    type="button"
+                                    className="btn-icon-action receipt"
+                                    onClick={() => onOpenReceipt && onOpenReceipt(cli, prf, cta)}
+                                    title="Emitir Comprobante / Recibo Digital"
+                                  >
+                                    <Receipt size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-icon-action edit"
+                                    onClick={() => onEditClient && onEditClient(cli)}
+                                    title="Editar cliente, PIN o fecha"
+                                  >
+                                    <Edit size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-icon-action renew"
+                                    onClick={() => onRenewClient(cli.id)}
+                                    title="Renovar membresía por 30 días más"
+                                  >
+                                    <RefreshCw size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-icon-action delete"
+                                    onClick={() => onDeleteClient(cli)}
+                                    title="Dar de baja y liberar perfil"
+                                  >
+                                    <UserMinus size={15} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Paginación de Clientes */}
+          {/* ========================================================================= */}
+          {/* VISTA 2: TARJETAS MÓVILES (< 768px)                                       */}
+          {/* ========================================================================= */}
+          <div className="mobile-cards-view">
+            {paginatedGrupos.map((g) => {
+              const platCritica = g.plataformaCritica;
+              const esUrgente = g.tieneUrgente;
+              const esVencido = g.tieneVencido;
+              const initialLetter = (g.nombre || 'C').charAt(0).toUpperCase();
+              const isPhoneVisible = showAllPhones || visiblesTelefonos.has(g.key);
+
+              return (
+                <div 
+                  key={g.key}
+                  className={`client-card-block mobile ${esUrgente ? 'block-urgent' : esVencido ? 'block-expired' : ''}`}
+                >
+                  {/* Cabecera Móvil */}
+                  <div className="client-card-header mobile">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div className="client-avatar-badge mobile" title={g.nombre}>
+                        {initialLetter}
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-light)', margin: 0 }}>
+                          {g.nombre}
+                        </h4>
+                        <div className="client-phone-row" style={{ marginTop: '2px' }}>
+                          <span className={`client-phone-number ${!isPhoneVisible ? 'is-masked' : ''}`}>
+                            {renderMaskedPhone(g.codigoPais, g.celular, isPhoneVisible)}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn-eye-inline"
+                            onClick={(e) => togglePhoneVisibility(g.key, e)}
+                            title={isPhoneVisible ? 'Ocultar número' : 'Ver número'}
+                          >
+                            {isPhoneVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-copy-inline"
+                            onClick={(e) => handleCopiarCelular(`${g.codigoPais}${g.celular}`, g.key, e)}
+                            title="Copiar número"
+                          >
+                            {celularCopiado === g.key ? <Check size={12} className="text-emerald" /> : <Copy size={12} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {g.totalPlataformas > 1 ? (
+                      <span className="multi-plat-badge mobile">
+                        <Sparkles size={11} />
+                        <span>{g.totalPlataformas} servicios</span>
+                      </span>
+                    ) : (
+                      <span className="single-plat-badge mobile">
+                        1 servicio
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Acciones principales del cliente en móvil */}
+                  <div style={{ display: 'flex', gap: '8px', padding: '10px 14px 0 14px' }}>
+                    <button
+                      type="button"
+                      className={`btn btn-whatsapp mobile-wa-btn ${esUrgente ? 'pulse-attention' : ''}`}
+                      style={{ flex: 1.2 }}
+                      onClick={() => {
+                        if (platCritica) {
+                          onOpenWhatsApp(platCritica.cliente, platCritica.perfilInfo, platCritica.cuentaInfo);
+                        }
+                      }}
+                    >
+                      <WhatsAppIcon size={17} color="#ffffff" />
+                      <span>{esUrgente ? 'Alerta WhatsApp' : 'WhatsApp'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-card-assign"
+                      style={{ flex: 1, height: '38px', justifyContent: 'center' }}
+                      onClick={() => onNewClient({ cliente: g })}
+                    >
+                      <Plus size={14} />
+                      <span>+ Asignar</span>
+                    </button>
+                  </div>
+
+                  {/* Lista de pantallas móviles 100% visibles */}
+                  <div className="mobile-expanded-subitems" style={{ padding: '12px 14px 14px 14px', borderTop: 'none' }}>
+                    {g.plataformas.map((p) => {
+                      const cli = p.cliente;
+                      const plat = p.platformInfo;
+                      const prf = p.perfilInfo;
+                      const cta = p.cuentaInfo;
+
+                      return (
+                        <div key={cli.id} className="mobile-subitem-card">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {plat.logo ? (
+                                <img src={plat.logo} alt={plat.name} style={{ height: '22px', objectFit: 'contain' }} />
+                              ) : (
+                                <span className="platform-pill">{plat.name}</span>
+                              )}
+                              <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                                {prf?.nombre || `Perfil ${prf?.numero || '?'}`}
+                              </span>
+                            </div>
+                            <span className="pin-badge" style={{ fontSize: '0.78rem' }}>
+                              PIN: {cli.pin || prf?.pin || '----'}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', fontSize: '0.78rem' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>Vence: <strong>{formatearFecha(cli.fechaVencimiento)}</strong></span>
+                            {renderExpiryTag(p.diasRestantes)}
+                          </div>
+
+                          {/* Acciones de la pantalla */}
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              className="btn btn-secondary mobile-mini-action"
+                              onClick={() => onOpenWhatsApp(cli, prf, cta)}
+                              title="Aviso WhatsApp"
+                            >
+                              <WhatsAppIcon size={13} color="#22c55e" />
+                              <span>Aviso</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary mobile-mini-action"
+                              onClick={() => onOpenReceipt && onOpenReceipt(cli, prf, cta)}
+                              title="Recibo"
+                            >
+                              <Receipt size={13} />
+                              <span>Recibo</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary mobile-mini-action"
+                              onClick={() => onEditClient && onEditClient(cli)}
+                              title="Editar"
+                            >
+                              <Edit size={13} />
+                              <span>Editar</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary mobile-mini-action"
+                              onClick={() => onRenewClient(cli.id)}
+                              title="Renovar +30d"
+                            >
+                              <RefreshCw size={13} />
+                              <span>+30d</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary mobile-mini-action"
+                              onClick={() => onDeleteClient(cli)}
+                              title="Baja"
+                            >
+                              <UserMinus size={13} />
+                              <span>Baja</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Paginación de Bloques de Clientes */}
           <Pagination
             currentPage={safeCurrentPage}
             totalItems={totalItems}
