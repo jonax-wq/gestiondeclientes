@@ -7,15 +7,11 @@ import {
   ChevronLeft, 
   ChevronRight, 
   X, 
-  Bell, 
-  Cloud, 
-  HardDrive,
-  Sparkles,
-  Sun,
-  Moon,
-  Lock,
-  ShieldCheck,
-  Crown
+  Sun, 
+  Moon, 
+  Lock, 
+  ShieldCheck, 
+  Crown 
 } from 'lucide-react';
 
 export function Sidebar({
@@ -43,7 +39,6 @@ export function Sidebar({
     {
       id: 'clientes',
       label: 'Clientes',
-      desc: 'Gestión y membresías',
       icon: Users,
       badge: clientCount,
       urgentBadge: urgentCount > 0 ? urgentCount : null,
@@ -52,15 +47,13 @@ export function Sidebar({
     {
       id: 'cuentas',
       label: 'Cuentas Maestras',
-      desc: 'Perfiles y contraseñas',
       icon: Tv,
       badge: accountCount,
       color: '#06b6d4'
     },
     {
       id: 'codigos',
-      label: 'Códigos Hogar & OTP',
-      desc: 'Extractor de correos',
+      label: 'Códigos Hogar',
       icon: KeyRound,
       badge: 'PRO',
       badgeColor: '#10b981',
@@ -69,7 +62,6 @@ export function Sidebar({
     ...(isSuperAdmin ? [{
       id: 'distribuidores',
       label: 'Distribuidores',
-      desc: 'Franquicias y licencias',
       icon: ShieldCheck,
       badge: distributorCount > 0 ? distributorCount : 'SaaS',
       badgeColor: '#10b981',
@@ -77,10 +69,9 @@ export function Sidebar({
     }] : []),
     {
       id: 'portal',
-      label: 'Portal Auto-Servicio',
-      desc: 'Vista para el cliente',
+      label: 'Portal Clientes',
       icon: Globe,
-      badge: 'Cliente',
+      badge: 'Auto',
       badgeColor: '#8b5cf6',
       color: '#a855f7'
     }
@@ -98,17 +89,17 @@ export function Sidebar({
 
       <aside className={`app-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
         {/* Cabecera del Sidebar */}
-        <div className="sidebar-header">
+        <div className="sidebar-header" style={{ marginBottom: '14px' }}>
           <div className="sidebar-brand">
             <img 
               src="/flow_logo.png" 
               alt="Flow Stream Logo" 
               className="sidebar-logo" 
               style={{
-                width: '36px',
-                height: '36px',
-                maxWidth: '36px',
-                maxHeight: '36px',
+                width: '34px',
+                height: '34px',
+                maxWidth: '34px',
+                maxHeight: '34px',
                 borderRadius: '8px',
                 objectFit: 'contain',
                 flexShrink: 0
@@ -119,39 +110,37 @@ export function Sidebar({
                 <div className="sidebar-app-name">
                   <span>Flow Stream</span>
                 </div>
-                <span className="sidebar-app-role">
-                  {isSuperAdmin ? 'Super-Administrador' : 'Panel Distribuidor'}
-                </span>
               </div>
             )}
           </div>
 
           {/* Botón cerrar en móvil */}
           <button 
+            type="button"
             className="sidebar-mobile-close-btn"
             onClick={onCloseMobile}
             title="Cerrar menú"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* Tarjeta de Perfil del Distribuidor Activo */}
+        {/* Tarjeta compacta del Distribuidor / Admin */}
         {!isCollapsed && currentDistributor && (
           <div style={{
-            margin: '0 12px 14px 12px',
-            padding: '10px 12px',
-            background: isSuperAdmin ? 'rgba(99, 102, 241, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-            border: `1px solid ${isSuperAdmin ? 'rgba(99, 102, 241, 0.25)' : 'rgba(16, 185, 129, 0.25)'}`,
-            borderRadius: '10px',
+            margin: '0 4px 16px 4px',
+            padding: '8px 10px',
+            background: isSuperAdmin ? 'rgba(99, 102, 241, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+            border: `1px solid ${isSuperAdmin ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+            borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px'
+            gap: '8px'
           }}>
             <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
+              width: '26px',
+              height: '26px',
+              borderRadius: '6px',
               background: isSuperAdmin ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)',
               color: isSuperAdmin ? '#818cf8' : '#10b981',
               display: 'flex',
@@ -159,35 +148,35 @@ export function Sidebar({
               justifyContent: 'center',
               flexShrink: 0
             }}>
-              {isSuperAdmin ? <Crown size={16} /> : <ShieldCheck size={16} />}
+              {isSuperAdmin ? <Crown size={14} /> : <ShieldCheck size={14} />}
             </div>
-            <div style={{ overflow: 'hidden' }}>
+            <div style={{ overflow: 'hidden', minWidth: 0, flex: 1 }}>
               <div style={{ 
-                fontSize: '11px', 
+                fontSize: '10px', 
                 fontFamily: 'monospace', 
                 fontWeight: 700, 
                 color: isSuperAdmin ? '#818cf8' : '#10b981',
-                letterSpacing: '0.8px'
+                letterSpacing: '0.4px',
+                lineHeight: 1.2
               }}>
                 {currentDistributor.codigo_distribuidor || 'DIST-2026'}
               </div>
               <div style={{ 
-                fontSize: '12.5px', 
+                fontSize: '11.5px', 
                 fontWeight: 600, 
                 color: 'var(--text-primary)',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
               }}>
-                {currentDistributor.nombre || 'Distribuidor'}
+                {currentDistributor.nombre || 'Administrador'}
               </div>
             </div>
           </div>
         )}
 
-        {/* Sección de Navegación Principal */}
+        {/* Sección de Navegación Principal (Limpia, sin subtítulos innecesarios) */}
         <div className="sidebar-nav-section">
-          {!isCollapsed && <div className="sidebar-section-title">MÓDULOS DEL CRM</div>}
           <nav className="sidebar-nav">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -196,6 +185,7 @@ export function Sidebar({
               return (
                 <button
                   key={item.id}
+                  type="button"
                   data-id={item.id}
                   className={`sidebar-nav-btn ${isActive ? 'active' : ''}`}
                   onClick={() => {
@@ -208,7 +198,7 @@ export function Sidebar({
                     className="sidebar-nav-icon-wrapper"
                     style={{ color: isActive ? '#fff' : item.color }}
                   >
-                    <Icon size={20} />
+                    <Icon size={19} />
                   </div>
 
                   {!isCollapsed && (
@@ -237,7 +227,6 @@ export function Sidebar({
                           )}
                         </div>
                       </div>
-                      <span className="sidebar-nav-desc">{item.desc}</span>
                     </div>
                   )}
 
@@ -253,49 +242,8 @@ export function Sidebar({
           </nav>
         </div>
 
-        {/* Card de acceso rápido para Extractor de Códigos */}
-        {!isCollapsed && (
-          <div className="sidebar-quick-card">
-            <div className="quick-card-badge">
-              <Sparkles size={13} />
-              <span>Netflix Hogar & OTP</span>
-            </div>
-            <p className="quick-card-text">
-              Pega el correo de Gmail y extrae el código de TV en 1 segundo.
-            </p>
-            <button 
-              className="quick-card-btn"
-              onClick={() => {
-                onSelectTab('codigos');
-                onCloseMobile();
-              }}
-            >
-              Extraer Código
-            </button>
-          </div>
-        )}
-
-        {/* Pie del Sidebar: Almacenamiento, Tema y Collapse */}
+        {/* Pie del Sidebar: Tema, Bloqueo y Colapso (Ultra limpio) */}
         <div className="sidebar-footer">
-
-          {/* Estado de Almacenamiento */}
-          {!isCollapsed && (
-            <div className="sidebar-storage-indicator">
-              {isCloudConnected ? (
-                <>
-                  <Cloud size={14} color="#10b981" />
-                  <span>Sincronizado con Supabase</span>
-                </>
-              ) : (
-                <>
-                  <HardDrive size={14} color="#f59e0b" />
-                  <span>Almacenamiento Local Seguro</span>
-                </>
-              )}
-            </div>
-          )}
-
-
           {/* Selector de Modo Claro / Oscuro */}
           <button 
             type="button"
@@ -304,19 +252,14 @@ export function Sidebar({
             title={theme === 'dark' ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
           >
             {theme === 'dark' ? (
-              <Sun size={18} color="#f59e0b" />
+              <Sun size={17} color="#f59e0b" />
             ) : (
-              <Moon size={18} color="#6366f1" />
+              <Moon size={17} color="#6366f1" />
             )}
             {!isCollapsed && (
-              <div className="db-action-text">
-                <span className="theme-action-title">
-                  {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
-                </span>
-                <span className="theme-action-sub">
-                  {theme === 'dark' ? 'Cambiar a interfaz diurna' : 'Cambiar a interfaz nocturna'}
-                </span>
-              </div>
+              <span className="theme-action-title">
+                {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
+              </span>
             )}
           </button>
 
@@ -325,14 +268,13 @@ export function Sidebar({
             type="button"
             className="sidebar-footer-action lock-system-btn"
             onClick={onLockAdmin}
-            title={isCollapsed ? 'Bloquear Sistema' : undefined}
+            title={isCollapsed ? 'Cerrar Sesión' : undefined}
           >
-            <Lock size={18} color="#f43f5e" />
+            <Lock size={17} color="#f43f5e" />
             {!isCollapsed && (
-              <div className="db-action-text">
-                <span className="theme-action-title" style={{ color: '#f87171' }}>Cerrar Sesión</span>
-                <span className="theme-action-sub">Bloquear panel</span>
-              </div>
+              <span className="theme-action-title" style={{ color: '#f87171' }}>
+                Cerrar Sesión
+              </span>
             )}
           </button>
 
@@ -343,7 +285,7 @@ export function Sidebar({
             onClick={onToggleCollapse}
             title={isCollapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
           >
-            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            {isCollapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
             {!isCollapsed && <span>Ocultar barra</span>}
           </button>
         </div>

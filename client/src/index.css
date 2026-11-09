@@ -2871,8 +2871,9 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
 }
 
-.db-action-title {
-  font-size: 0.8rem;
+.db-action-title,
+.theme-action-title {
+  font-size: 0.82rem;
   font-weight: 600;
   color: #f8fafc;
 }
