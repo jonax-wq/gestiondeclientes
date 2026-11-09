@@ -10,8 +10,7 @@ import {
   Sun, 
   Moon, 
   Lock, 
-  ShieldCheck, 
-  Crown 
+  ShieldCheck 
 } from 'lucide-react';
 
 export function Sidebar({
@@ -40,7 +39,7 @@ export function Sidebar({
       id: 'clientes',
       label: 'Clientes',
       icon: Users,
-      badge: clientCount,
+      badge: clientCount > 0 ? clientCount : null,
       urgentBadge: urgentCount > 0 ? urgentCount : null,
       color: '#6366f1'
     },
@@ -48,31 +47,26 @@ export function Sidebar({
       id: 'cuentas',
       label: 'Cuentas Maestras',
       icon: Tv,
-      badge: accountCount,
+      badge: accountCount > 0 ? accountCount : null,
       color: '#06b6d4'
     },
     {
       id: 'codigos',
       label: 'Códigos Hogar',
       icon: KeyRound,
-      badge: 'PRO',
-      badgeColor: '#10b981',
       color: '#10b981'
     },
     ...(isSuperAdmin ? [{
       id: 'distribuidores',
       label: 'Distribuidores',
       icon: ShieldCheck,
-      badge: distributorCount > 0 ? distributorCount : 'SaaS',
-      badgeColor: '#10b981',
+      badge: distributorCount > 0 ? distributorCount : null,
       color: '#10b981'
     }] : []),
     {
       id: 'portal',
       label: 'Portal Clientes',
       icon: Globe,
-      badge: 'Auto',
-      badgeColor: '#8b5cf6',
       color: '#a855f7'
     }
   ];
@@ -89,7 +83,7 @@ export function Sidebar({
 
       <aside className={`app-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
         {/* Cabecera del Sidebar */}
-        <div className="sidebar-header" style={{ marginBottom: '14px' }}>
+        <div className="sidebar-header" style={{ marginBottom: '20px' }}>
           <div className="sidebar-brand">
             <img 
               src="/flow_logo.png" 
@@ -125,57 +119,7 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* Tarjeta compacta del Distribuidor / Admin */}
-        {!isCollapsed && currentDistributor && (
-          <div style={{
-            margin: '0 4px 16px 4px',
-            padding: '8px 10px',
-            background: isSuperAdmin ? 'rgba(99, 102, 241, 0.08)' : 'rgba(16, 185, 129, 0.08)',
-            border: `1px solid ${isSuperAdmin ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <div style={{
-              width: '26px',
-              height: '26px',
-              borderRadius: '6px',
-              background: isSuperAdmin ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-              color: isSuperAdmin ? '#818cf8' : '#10b981',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              {isSuperAdmin ? <Crown size={14} /> : <ShieldCheck size={14} />}
-            </div>
-            <div style={{ overflow: 'hidden', minWidth: 0, flex: 1 }}>
-              <div style={{ 
-                fontSize: '10px', 
-                fontFamily: 'monospace', 
-                fontWeight: 700, 
-                color: isSuperAdmin ? '#818cf8' : '#10b981',
-                letterSpacing: '0.4px',
-                lineHeight: 1.2
-              }}>
-                {currentDistributor.codigo_distribuidor || 'DIST-2026'}
-              </div>
-              <div style={{ 
-                fontSize: '11.5px', 
-                fontWeight: 600, 
-                color: 'var(--text-primary)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
-                {currentDistributor.nombre || 'Administrador'}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Sección de Navegación Principal (Limpia, sin subtítulos innecesarios) */}
+        {/* Sección de Navegación Principal (Ultra limpia, solo icono + nombre + contador numérico) */}
         <div className="sidebar-nav-section">
           <nav className="sidebar-nav">
             {navItems.map((item) => {
@@ -206,7 +150,7 @@ export function Sidebar({
                       <div className="sidebar-nav-title-row">
                         <span className="sidebar-nav-label">{item.label}</span>
                         
-                        {/* Badges de alertas o contadores */}
+                        {/* Badges de alertas o contadores numéricos */}
                         <div className="sidebar-nav-badges">
                           {item.urgentBadge && (
                             <span className="badge badge-urgent animate-pulse">
@@ -242,7 +186,7 @@ export function Sidebar({
           </nav>
         </div>
 
-        {/* Pie del Sidebar: Tema, Bloqueo y Colapso (Ultra limpio) */}
+        {/* Pie del Sidebar: Modo Claro/Oscuro, Cerrar Sesión y Colapso */}
         <div className="sidebar-footer">
           {/* Selector de Modo Claro / Oscuro */}
           <button 
