@@ -9,6 +9,7 @@ import { AccountsView } from './components/AccountsView';
 import { CodesView } from './components/CodesView';
 import { CustomerPortalView } from './components/CustomerPortalView';
 import { DistributorsView } from './components/DistributorsView';
+import { WhatsAppAutoView } from './components/WhatsAppAutoView';
 import { DatabaseModal } from './components/DatabaseModal';
 import { NewClientModal } from './components/NewClientModal';
 import { EditClientModal } from './components/EditClientModal';
@@ -826,6 +827,7 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
           <UrgentAlertBanner 
             urgentClients={urgentClients}
             onActionClick={() => { setActiveTab('clientes'); setClientFilter('por_vencer'); }}
+            onGoToAuto={() => setActiveTab('whatsapp_auto')}
           />
 
           {/* 3. Métricas y KPIs (visibles en Clientes y Cuentas) */}
@@ -877,6 +879,13 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
 
           {activeTab === 'codigos' && (
             <CodesView 
+              clientes={clientes}
+              cuentas={cuentas}
+            />
+          )}
+
+          {activeTab === 'whatsapp_auto' && (
+            <WhatsAppAutoView 
               clientes={clientes}
               cuentas={cuentas}
             />

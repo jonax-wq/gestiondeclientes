@@ -1,8 +1,8 @@
 import React from 'react';
-import { AlertCircle, ArrowRight } from 'lucide-react';
+import { AlertCircle, ArrowRight, Bot } from 'lucide-react';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
 
-export function UrgentAlertBanner({ urgentClients = [], onActionClick }) {
+export function UrgentAlertBanner({ urgentClients = [], onActionClick, onGoToAuto }) {
   if (urgentClients.length === 0) return null;
 
   return (
@@ -21,15 +21,29 @@ export function UrgentAlertBanner({ urgentClients = [], onActionClick }) {
         </div>
       </div>
 
-      <button 
-        className="btn btn-whatsapp urgent-action-btn" 
-        onClick={onActionClick}
-      >
-        <WhatsAppIcon size={18} color="#ffffff" />
-        <span className="hide-on-mobile">Gestionar y Enviar WhatsApp</span>
-        <span className="show-on-mobile">Enviar WhatsApp ({urgentClients.length})</span>
-        <ArrowRight size={15} />
-      </button>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+        {onGoToAuto && (
+          <button 
+            type="button"
+            className="btn btn-secondary urgent-action-btn"
+            onClick={onGoToAuto}
+            title="Configurar o ejecutar envío automático por WhatsApp"
+          >
+            <Bot size={16} color="#10b981" />
+            <span>Auto Bot</span>
+          </button>
+        )}
+
+        <button 
+          className="btn btn-whatsapp urgent-action-btn" 
+          onClick={onActionClick}
+        >
+          <WhatsAppIcon size={18} color="#ffffff" />
+          <span className="hide-on-mobile">Gestionar Clientes</span>
+          <span className="show-on-mobile">Clientes ({urgentClients.length})</span>
+          <ArrowRight size={15} />
+        </button>
+      </div>
     </div>
   );
 }

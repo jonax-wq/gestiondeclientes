@@ -5,6 +5,17 @@ import { simpleParser } from 'mailparser';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import {
+  initWhatsApp,
+  getWhatsAppStatus,
+  disconnectWhatsApp,
+  sendWhatsAppMessage,
+  getAutoReminderConfig,
+  saveAutoReminderConfig,
+  getReminderHistory,
+  runAutomatedReminders,
+  startAutoReminderScheduler
+} from './whatsappService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -675,11 +686,88 @@ app.post('/api/imap/disconnect', async (req, res) => {
   }
 });
 
+// ===========================================================================
+// RUTAS DE WHATSAPP AUTOMÁTICO (BAILEYS QR + RECORDATORIOS DESATENDIDOS)
+// ===========================================================================
+
+app.get('/api/whatsapp/status', (req, res) => {
+  res.json(getWhatsAppStatus());
+});
+
+app.post('/api/whatsapp/connect', async (req, res) => {
+  try {
+    const status = await initWhatsApp();
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/whatsapp/disconnect', async (req, res) => {
+  try {
+    const result = await disconnectWhatsApp();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/whatsapp/send-test', async (req, res) => {
+  try {
+    const { phone, message } = req.body || {};
+    const result = await sendWhatsAppMessage(phone, message);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/whatsapp/config', (req, res) => {
+  res.json(getAutoReminderConfig());
+});
+
+app.post('/api/whatsapp/config', (req, res) => {
+  try {
+    const saved = saveAutoReminderConfig(req.body);
+    res.json({ success: true, config: saved });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/whatsapp/history', (req, res) => {
+  res.json({ history: getReminderHistory() });
+});
+
+app.post('/api/whatsapp/run-auto', async (req, res) => {
+  try {
+    const { force = true, dryRun = false, clientData } = req.body || {};
+    const result = await runAutomatedReminders({ force, dryRun, clientData });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Arrancar servidor
 app.listen(PORT, async () => {
-  console.log(`[StreamFlow IMAP Service] Servidor escuchando en http://localhost:${PORT}`);
+  console.log(`[StreamFlow Service] Servidor escuchando en http://localhost:${PORT}`);
 
-  // Intentar conectar automáticamente si ya había configuración guardada
+  // Iniciar planificador diario de recordatorios de WhatsApp
+  startAutoReminderScheduler();
+
+  // Si ya existían credenciales de WhatsApp guardadas, autoconectar en silencio
+  try {
+    const authDir = path.join(__dirname, 'auth_baileys');
+    if (fs.existsSync(authDir) && fs.readdirSync(authDir).length > 0) {
+      console.log('[WhatsApp Service] Sesión previa detectada. Autoconectando...');
+      initWhatsApp().catch(err => console.warn('[WhatsApp Service] Autoconexión inicial:', err.message));
+    }
+  } catch (err) {
+    console.warn('[WhatsApp Service] Error verificando sesión previa:', err.message);
+  }
+
+  // Intentar conectar automáticamente buzón IMAP si ya había configuración guardada
   const saved = loadSavedConfig();
   if (saved && saved.user && saved.pass) {
     console.log(`[StreamFlow IMAP] Conectando automáticamente con configuración guardada (${saved.user})...`);

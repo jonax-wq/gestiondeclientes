@@ -25,6 +25,9 @@ yarn-debug.log*
 yarn-error.log*
 database/backup_actual.json
 database/migracion_completa_con_datos_y_distribuidores.sql
+server/auth_baileys/
+auth_baileys/
+server/auto_reminder_config.json
 
 # Editores y SO
 .vscode/

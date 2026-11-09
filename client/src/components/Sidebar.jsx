@@ -9,7 +9,8 @@ import {
   Sun, 
   Moon, 
   Lock, 
-  ShieldCheck 
+  ShieldCheck,
+  Bot
 } from 'lucide-react';
 
 export function Sidebar({
@@ -54,6 +55,12 @@ export function Sidebar({
       label: 'Códigos Hogar',
       icon: KeyRound,
       color: '#10b981'
+    },
+    {
+      id: 'whatsapp_auto',
+      label: 'WhatsApp Auto',
+      icon: Bot,
+      color: '#22c55e'
     },
     ...(isSuperAdmin ? [{
       id: 'distribuidores',

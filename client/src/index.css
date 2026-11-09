@@ -9145,3 +9145,593 @@ h1, h2, h3, h4, h5, h6 {
   border-color: #818cf8 !important;
   color: #3730a3 !important;
 }
+
+
+/* ==========================================================================
+   VISTA: AUTOMATIZACIÓN DE WHATSAPP (BOT + QR BAILEYS)
+   ========================================================================== */
+
+.whatsapp-auto-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.whatsapp-auto-header-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.whatsapp-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.whatsapp-logo-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+  flex-shrink: 0;
+}
+
+.whatsapp-auto-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.whatsapp-auto-subtitle {
+  margin: 3px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.status-badge-connected {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+  font-size: 0.84rem;
+}
+
+.status-dot-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+  animation: pulse-dot 1.8s infinite;
+}
+
+.status-badge-disconnected {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #f43f5e;
+  font-size: 0.84rem;
+}
+
+.status-dot-off {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f43f5e;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.whatsapp-auto-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 950px) {
+  .whatsapp-auto-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.whatsapp-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header-clean {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.card-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.card-body-clean {
+  padding: 20px;
+  flex: 1;
+}
+
+.btn-text-danger {
+  background: transparent;
+  border: none;
+  color: #f43f5e;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-text-danger:hover {
+  background: rgba(244, 63, 94, 0.12);
+}
+
+/* Conectado */
+.connected-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.connected-icon-wrapper {
+  margin-bottom: 12px;
+}
+
+.connected-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.connected-phone {
+  margin: 4px 0 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #10b981;
+  font-family: monospace;
+}
+
+.connected-sub {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.connected-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 18px 0;
+  width: 100%;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* Formulario de prueba */
+.test-send-section {
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.test-send-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.test-send-form {
+  display: flex;
+  gap: 8px;
+}
+
+.test-send-form .form-input {
+  flex: 1;
+}
+
+/* QR Code Box */
+.qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.qr-image-wrapper {
+  background: #ffffff;
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  margin-bottom: 16px;
+}
+
+.qr-image {
+  width: 220px;
+  height: 220px;
+  display: block;
+}
+
+.qr-instructions {
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  text-align: left;
+  width: 100%;
+}
+
+.instructions-title {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  color: #c7d2fe;
+}
+
+.instructions-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Desconectado */
+.disconnected-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 30px 10px;
+}
+
+.disconnected-icon-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.disconnected-title {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  color: var(--text-primary);
+}
+
+.disconnected-desc {
+  margin: 0 0 20px;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  max-width: 380px;
+  line-height: 1.5;
+}
+
+/* Despacho Manual */
+.manual-dispatch-card {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.dispatch-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dispatch-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dispatch-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.dispatch-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  white-space: nowrap;
+}
+
+.btn-run-auto {
+  width: 100%;
+  justify-content: center;
+  height: 42px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  gap: 8px;
+}
+
+.last-run-alert {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-size: 0.8rem;
+  color: #10b981;
+}
+
+/* Formulario de Configuración Cron */
+.cron-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.config-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.form-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.toggle-label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toggle-desc {
+  margin: 2px 0 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.form-grid-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Historial */
+.history-table-wrapper {
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.history-table th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+.history-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.history-date {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.history-phone {
+  font-family: monospace;
+  color: #10b981;
+}
+
+.history-plat {
+  color: var(--text-secondary);
+}
+
+.history-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.history-status.success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.history-status.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.empty-history-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+/* Switch styling */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(255, 255, 255, 0.15);
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #10b981;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* Modo Claro */
+[data-theme="light"] .whatsapp-auto-header-card,
+[data-theme="light"] .whatsapp-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .card-header-clean {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .connected-features {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .instructions-title {
+  color: #4338ca !important;
+}
+
+[data-theme="light"] .instructions-list {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .qr-instructions {
+  background: #f5f3ff !important;
+  border-color: #c7d2fe !important;
+}
+
+[data-theme="light"] .form-toggle-row {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .history-table td {
+  border-color: #f1f5f9 !important;
+}
