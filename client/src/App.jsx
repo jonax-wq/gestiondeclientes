@@ -19,6 +19,7 @@ import { EditAccountModal } from './components/EditAccountModal';
 import { NewDistributorModal } from './components/NewDistributorModal';
 import { WhatsAppModal } from './components/WhatsAppModal';
 import { ReceiptModal } from './components/ReceiptModal';
+import { AccountIncidentModal } from './components/AccountIncidentModal';
 import { ConfirmModal } from './components/ConfirmModal';
 import { AdminLockScreen } from './components/AdminLockScreen';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
@@ -137,6 +138,7 @@ export default function App() {
   const [accountToEdit, setAccountToEdit] = useState(null);
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [incidentModal, setIncidentModal] = useState({ isOpen: false, cuenta: null });
 
   // Modal de confirmación estilizado
   const [confirmModal, setConfirmModal] = useState({
@@ -874,6 +876,7 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
               onRenewAccount={handleRenewAccount}
               onEditAccount={handleOpenEditAccount}
               onOpenWhatsApp={handleOpenWhatsApp}
+              onOpenIncident={(cta) => setIncidentModal({ isOpen: true, cuenta: cta })}
             />
           )}
 
@@ -980,6 +983,17 @@ Tu acceso como Distribuidor de streaming ya se encuentra *ACTIVO*:
             cliente={receiptSelection.cliente}
             perfil={receiptSelection.perfil}
             cuenta={receiptSelection.cuenta}
+          />
+
+          <AccountIncidentModal
+            isOpen={incidentModal.isOpen}
+            onClose={() => setIncidentModal({ isOpen: false, cuenta: null })}
+            cuenta={incidentModal.cuenta}
+            clientes={clientes}
+            onGoToWhatsAppAuto={() => {
+              setIncidentModal({ isOpen: false, cuenta: null });
+              setActiveTab('whatsapp_auto');
+            }}
           />
 
           <DatabaseModal

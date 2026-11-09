@@ -14,7 +14,8 @@ import {
   saveAutoReminderConfig,
   getReminderHistory,
   runAutomatedReminders,
-  startAutoReminderScheduler
+  startAutoReminderScheduler,
+  sendBroadcastMessages
 } from './whatsappService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -746,6 +747,16 @@ app.post('/api/whatsapp/run-auto', async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/whatsapp/broadcast', async (req, res) => {
+  try {
+    const { messages = [], options = {} } = req.body || {};
+    const result = await sendBroadcastMessages(messages, options);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 

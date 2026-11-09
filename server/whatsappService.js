@@ -522,6 +522,76 @@ export async function runAutomatedReminders(options = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// Enviar Mensajes Masivos / Difusión (Avisos de Caída / Mantenimiento)
+// ---------------------------------------------------------------------------
+
+export async function sendBroadcastMessages(messages = [], options = {}) {
+  const { delaySeconds = 4, reason = 'incidencia' } = options;
+
+  if (!connectionStatus.isConnected || !sock) {
+    throw new Error('WhatsApp no está conectado. Conecta tu WhatsApp primero en el módulo "WhatsApp Auto".');
+  }
+
+  if (!Array.isArray(messages) || messages.length === 0) {
+    throw new Error('No se proporcionaron mensajes para enviar.');
+  }
+
+  const results = [];
+  let totalSent = 0;
+  let totalErrors = 0;
+
+  for (let i = 0; i < messages.length; i++) {
+    const item = messages[i];
+    try {
+      const res = await sendWhatsAppMessage(item.phone, item.message);
+      totalSent++;
+      const successEntry = {
+        id: `inc_${Date.now()}_${i}`,
+        clienteId: item.clienteId,
+        nombre: item.nombre,
+        celular: item.phone,
+        plataforma: item.plataforma || 'General',
+        perfil: item.perfil || '',
+        fechaEnvio: new Date().toISOString(),
+        estado: 'enviado',
+        tipo: reason,
+        messageId: res.messageId
+      };
+      appendReminderHistory(successEntry);
+      results.push({ ...item, success: true, messageId: res.messageId });
+    } catch (err) {
+      totalErrors++;
+      const errorEntry = {
+        id: `inc_${Date.now()}_${i}`,
+        clienteId: item.clienteId,
+        nombre: item.nombre,
+        celular: item.phone,
+        plataforma: item.plataforma || 'General',
+        perfil: item.perfil || '',
+        fechaEnvio: new Date().toISOString(),
+        estado: 'error',
+        tipo: reason,
+        error: err.message
+      };
+      appendReminderHistory(errorEntry);
+      results.push({ ...item, success: false, error: err.message });
+    }
+
+    // Esperar pausa anti-spam si hay más mensajes en la cola
+    if (i < messages.length - 1 && delaySeconds > 0) {
+      await new Promise(r => setTimeout(r, delaySeconds * 1000));
+    }
+  }
+
+  return {
+    success: true,
+    totalSent,
+    totalErrors,
+    results
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Scheduler / Cron automático en segundo plano
 // ---------------------------------------------------------------------------
 
@@ -554,3 +624,4 @@ export function startAutoReminderScheduler() {
     }
   }, 10 * 60 * 1000); // 10 minutos
 }
+

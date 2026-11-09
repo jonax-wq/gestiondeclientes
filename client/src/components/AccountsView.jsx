@@ -36,7 +36,8 @@ export function AccountsView({
   onDeleteAccount,
   onOpenWhatsApp,
   onRenewAccount,
-  onEditAccount
+  onEditAccount,
+  onOpenIncident
 }) {
   const toast = useToast();
   const [showPassword, setShowPassword] = useState({});
@@ -389,6 +390,20 @@ export function AccountsView({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <button
                       type="button"
+                      className="btn-icon-action incident"
+                      onClick={() => onOpenIncident && onOpenIncident(cta)}
+                      title={ocupados === 0 ? "Sin clientes asignados" : `Aviso de Caída / Mantenimiento a los ${ocupados} clientes`}
+                      disabled={ocupados === 0}
+                      style={{
+                        color: ocupados > 0 ? '#f59e0b' : '#64748b',
+                        background: ocupados > 0 ? 'rgba(245, 158, 11, 0.12)' : 'transparent',
+                        borderColor: ocupados > 0 ? 'rgba(245, 158, 11, 0.3)' : undefined
+                      }}
+                    >
+                      <AlertTriangle size={15} />
+                    </button>
+                    <button
+                      type="button"
                       className="btn-icon-action edit"
                       onClick={() => onEditAccount && onEditAccount(cta)}
                       title="Editar cuenta maestra, credenciales y perfiles"
@@ -530,27 +545,59 @@ export function AccountsView({
                       </div>
                     </div>
 
-                    {/* Botón directo de Renovación de la Cuenta Maestra */}
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={() => onRenewAccount && onRenewAccount(cta.id)}
-                      style={{
-                        width: '100%',
-                        marginTop: '10px',
-                        padding: '8px 12px',
-                        fontSize: '0.82rem',
-                        background: 'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px'
-                      }}
-                      title="Renovar mensualidad de la cuenta maestra (+30 días de corte y registra gasto mensual)"
-                    >
-                      <RefreshCw size={14} />
-                      <span>Renovar Cuenta Maestra</span>
-                    </button>
+                    {/* Botones de Acción de la Cuenta Maestra: Renovar y Aviso de Incidencia */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: ocupados > 0 ? '1fr 1fr' : '1fr',
+                      gap: '8px',
+                      marginTop: '10px'
+                    }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => onRenewAccount && onRenewAccount(cta.id)}
+                        style={{
+                          padding: '8px 10px',
+                          fontSize: '0.8rem',
+                          background: 'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px'
+                        }}
+                        title="Renovar mensualidad de la cuenta maestra (+30 días de corte y registra gasto mensual)"
+                      >
+                        <RefreshCw size={14} />
+                        <span>Renovar Cuenta</span>
+                      </button>
+
+                      {ocupados > 0 && (
+                        <button
+                          type="button"
+                          className="btn btn-incident-action"
+                          onClick={() => onOpenIncident && onOpenIncident(cta)}
+                          style={{
+                            padding: '8px 8px',
+                            fontSize: '0.78rem',
+                            background: 'rgba(245, 158, 11, 0.12)',
+                            border: '1px solid rgba(245, 158, 11, 0.35)',
+                            color: '#fbbf24',
+                            borderRadius: '8px',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          title={`Aviso masivo de caída o mantenimiento a los ${ocupados} clientes de esta cuenta`}
+                        >
+                          <AlertTriangle size={14} />
+                          <span>Aviso Caída ({ocupados})</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Desplegable / Acordeón para Perfiles y Pantallas */}
